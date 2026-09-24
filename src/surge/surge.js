@@ -26,7 +26,7 @@ export const SURGE = {
   stormHit: { shape: 'circle', range: 2.7, dmg: 16, kb: 'launch', force: 5.5, lift: 6, hitstop: 0, yMax: 1.9 },
   heroHit: { shape: 'circle', range: 3.0, dmg: 7, kb: 'launch', force: 4.5, lift: 5, hitstop: 0, yMax: 1.7 },
   waveHit: { shape: 'circle', range: 0, dmg: 60, kb: 'blow', force: 7.5, lift: 9.5, hitstop: 0, heavy: true, yMax: 6 },
-  cost: 1 / 3,                             // one Surge spends one of the gauge's 3 segments (SENJIN tuning)
+  cost: 1 / 4,                             // one Surge spends one of the gauge's four segments (SENJIN tuning)
 };
 
 // ---------------------------------------------------------------- storm path (pure; shared with the view)
