@@ -133,7 +133,7 @@ const thrust = (z, y = 1.18, yaw = 0, elev = 0, extra = {}) => ({
 // spear held out to the left side (for spin sweeps), body squared
 const SIDE = { hipsR: [4, 10, 0], spine: [6, 10, 0], chest: [2, 10, 0], head: [0, 0, 0], spear: [-0.02, 1.08, 0.32, 88, -4, 0], gripL: 0.38 };
 
-// ---------------------------------------------------------------- normal string (benchmark: reference build the vanguard □×6)
+// ---------------------------------------------------------------- normal string (tuning target: SENJIN tuning the vanguard □×6)
 // N1 overhead diagonal chop · N2 step-in rising upswing (knee lift) · N3 flat low sweep with torso twist · N4 run-in with
 // the spear carried overhead, shoulder-high sweep · N5 over-shoulder chop into a front twirl, pivot on the lead foot ·
 // N6 hop-lunge thrust, overhead whip into a 360° spin sweep pivoting on the lead foot, held low finish.
@@ -329,7 +329,7 @@ function n6() {
   ]);
 }
 
-// ---------------------------------------------------------------- charge attacks (benchmark: reference build C1–C6)
+// ---------------------------------------------------------------- charge attacks (tuning target: SENJIN tuning C1–C6)
 // One silhouette per tier: C1 coiled poke · C2 rising launcher into a pole-vault over the planted spear · C3 windmill
 // twirl while stepping, cocked overhead, ground slam · C4 spear level overhead, 360° sweep (+ a slower second turn), held
 // extended · C5 deep low sweep, upswing, spear raised vertical for the ground burst · C6 rising slash, overhead helicopter
