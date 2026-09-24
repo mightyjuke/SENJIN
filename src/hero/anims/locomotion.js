@@ -233,9 +233,9 @@ export function createDodgeGhosts(scene, model) {
       const live = groups[0], dodging = hero.state === 'dodge';
       hx = hero.x; hz = hero.z;
       if (dodging && (hero.dodgeSeq !== seq || hero.stateT < lastT)) { seq = hero.dodgeSeq; lastT = -9; }
-      // i-frame read (the benchmark shows none): a white-teal pop on the push-off, then a teal shimmer that holds for
-      // exactly the invulnerable window and cuts out when it ends. Jump charge: a pulsing blue aura through the apex
-      // hang (SENJIN tuning A→Y glows while it hangs), flaring just before the plunge.
+      // SENJIN i-frame read: a white-crimson pop on the push-off, then a warm shimmer that holds for
+      // exactly the invulnerable window and cuts out when it ends. Jump charge: a pulsing gold-crimson aura through the apex
+      // hang, flaring just before the plunge.
       // locomotion-dodge r3: the glow is a bright rim + a light body tint (was a 0.75 additive shell = a white blob)
       let glow = 0, k = 1.06, edge = 0, ke = 1.1;
       if (dodging && hero.stateT < IF) {
