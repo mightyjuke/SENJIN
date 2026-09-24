@@ -20,13 +20,13 @@ export const SURGE = {
   // (yMax ≈ 1 H), so the fan hangs at chest-to-head height while the storm tears through it instead of being popped up a
   // little more every tick (it climbed to 4 m and was still airborne 0.6 s after control returned)
   contactHit: { shape: 'sector', range: 9.5, ang: 210, dmg: 12, kb: 'blow', force: 6.5, lift: 8.2, hitstop: 3, yMax: 5 },
-  // the contact shock front rolls on through the crowd ahead (bench: CHAIN 9→91 in 0.4 s, a 20–35 body launch fan)
+  // the contact shock front rolls on through the crowd ahead (tuning target: CHAIN 9→91 in 0.4 s, a 20–35 body launch fan)
   front: { frames: 24, r0: 4, r1: 15, ang: 180 },
   backHit: { shape: 'circle', range: 3.2, dmg: 12, kb: 'launch', force: 5, lift: 7, hitstop: 0, yMax: 5 },
   stormHit: { shape: 'circle', range: 2.7, dmg: 16, kb: 'launch', force: 5.5, lift: 6, hitstop: 0, yMax: 1.9 },
   heroHit: { shape: 'circle', range: 3.0, dmg: 7, kb: 'launch', force: 4.5, lift: 5, hitstop: 0, yMax: 1.7 },
   waveHit: { shape: 'circle', range: 0, dmg: 60, kb: 'blow', force: 7.5, lift: 9.5, hitstop: 0, heavy: true, yMax: 6 },
-  cost: 1 / 3,                             // one Surge spends one of the gauge's 3 segments (reference build)
+  cost: 1 / 3,                             // one Surge spends one of the gauge's 3 segments (SENJIN tuning)
 };
 
 // ---------------------------------------------------------------- storm path (pure; shared with the view)
@@ -106,7 +106,7 @@ const runKey = (u) => {
     footL: foot(0.12, 0), footR: foot(-0.12, Math.PI), spear: [-0.2, 1.02 - s * 0.03, -0.08, 5, -3, 90] }), 'lin'];
 };
 Object.assign(CLIPS, {
-  // reference build activation: spear planted upright in the right hand, left arm thrown out, chin up at the camera
+  // SENJIN tuning activation: spear planted upright in the right hand, left arm thrown out, chin up at the camera
   mu_act: clip([
     [0, P()],
     [0.35, P(RAISE), 'out'],
@@ -279,7 +279,7 @@ export function createSurge(game) {
     const t = mu.t, M = SURGE, h = game.hero, o = shot;
     const ease = (a, b, u) => a + (b - a) * (u * u * (3 - 2 * u));
     o.shake = 0.3; o.side = 0;
-    // r3: the intro shots look DOWN onto the cobbles and the frozen crowd (reference build anchor-activation-pose), never up into the
+    // r3: the intro shots look DOWN onto the cobbles and the frozen crowd (SENJIN tuning anchor-activation-pose), never up into the
     // hazy sunlit sky: the old low, level pose (pitch -0.07) was 2.1× gameplay luma before the dim, so the intro never
     // went dark and the payoff had nothing to release from. Yaws stay off the sun's azimuth.
     if (t < M.closeup) {                                   // front three-quarter from above head height, slow push-in
@@ -292,7 +292,7 @@ export function createSurge(game) {
     } else if (t < M.contact) {                            // low chase camera behind him (never into the sun)
       Object.assign(o, { id: 3, yaw: h.yaw, dist: 2.7, pitch: 0.08, fov: 54, height: 0.95 });
     } else if (t >= M.finisher - 10) {
-      // r3 finisher: cut (as the storm rears for its dive) to a low wide shot from behind him (reference build ring-wave framing:
+      // r3 finisher: cut (as the storm rears for its dive) to a low wide shot from behind him (SENJIN tuning ring-wave framing:
       // hero ≈ 20 % of frame height, the launched tiers stacked against the sky, the dive onto him and the coil in full
       // view). The old flank camera had the dive + coil 4–6 m from the lens and the wave dust between, a teal fog with
       // no hero in it. It is also the gameplay side of him, so the blend back to control is short.
