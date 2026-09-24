@@ -1,6 +1,6 @@
 // Original SENJIN HUD: pixel portrait badge, compact health display, segmented Surge gauge,
 // surge gauge (bottom band), KO count with slam pops and 50-KO milestone seal (bottom right / centre, kept off the hero),
-// chain counter that rolls up hit by hit with reference build ghost digits (left), officer target bar (top left) and stacked floating
+// chain counter that rolls up hit by hit with SENJIN ghost digits (left), officer target bar (top left) and stacked floating
 // officer name/HP/▼▼ tags, square battlefield minimap with morale bar (top right), queued system banners and dialogue,
 // a title/controls intro card, and an idle auto-fade.
 // Render-only: reads sim state, never writes it. Animations are timed in sim frames.
@@ -87,7 +87,7 @@ export function createHud(root, game, { camera = null } = {}) {
   const resetText = () => { num(koB, 0); koG.textContent = '0'; };
   let showKeys = null;
   // system banners queue (one at a time, held back while the Surge plays); dialogue (top left) and the banner band
-  // (y 64-70 %) sit apart, so neither cancels the other. Dialogue holds 5 s like reference build.
+  // (y 64-70 %) sit apart, so neither cancels the other. Dialogue holds 5 s like SENJIN.
   const banner = (html, en, dur = 150) => { if (S.bandQ.length < 3) S.bandQ.push({ html, en, dur }); };
   const say = (zh, en, dur = 300) => { S.dlg = { zh, en, f: game.frame, dur }; };
   on('scenario', (e) => { reset(); resetText(); if (e.name === 'crowd' || e.name === 'arena') S.dlg = { zh: '防線在我身後，誰也別想越過！', en: 'The line is under my protection. None of you shall pass!', f: 185, dur: 300 }; });
@@ -126,7 +126,7 @@ export function createHud(root, game, { camera = null } = {}) {
       const introA = showKeys === false || S.surgeF >= 0 ? 0 : clamp01((180 - f) / 30) * (1 - S.introCut);
       set(intro, 'opacity', (showKeys ? 1 : introA).toFixed(2));
 
-      // idle auto-fade (quieter than reference build at rest): 4 s after the last attack/hit/hurt, the player band, minimap and KO
+      // idle auto-fade (quieter than SENJIN at rest): 4 s after the last attack/hit/hurt, the player band, minimap and KO
       // count ease to 55 % over 40 f; the next action snaps them back. A full surge gauge keeps the band lit.
       const calm = 1 - 0.45 * clamp01((f - S.actF - 240) / 40) * (game.surge.ready() ? 0 : 1);
       set(player, 'opacity', calm.toFixed(2)); set(mapEl, 'opacity', calm.toFixed(2));
@@ -151,7 +151,7 @@ export function createHud(root, game, { camera = null } = {}) {
       mu.classList.toggle('active', inSurge);
 
       // chain counter (left). Combat resolves a whole swing's hits on one sim frame, so the shown number rolls up to
-      // h.combo in reference build-style ticks instead of jumping: one tick every 2 f, the first on the hit frame, front-loaded steps
+      // h.combo in SENJIN-style ticks instead of jumping: one tick every 2 f, the first on the hit frame, front-loaded steps
       // (+4 +3 +3 +2 +2 +2 for a 16-hit sweep). Each hit batch is queued as [frame, combo] and shown within 10 f (6 ticks),
       // so a long Surge stream never falls behind. Every tick spawns a ghost of the new last digit (pool of 3, so a roll
       // leaves a trail): 1.45× up-right with a smear, merging into the number in 6 f.
@@ -165,7 +165,7 @@ export function createHud(root, game, { camera = null } = {}) {
         while (S.chainQ.length && S.chainQ[0][1] <= S.shownChain) S.chainQ.shift();
         S.chainF = f; num(chainB, S.shownChain);
         const g = chainG[S.ghostN++ % chainG.length];
-        text(g.el, S.shownChain % 10); g.f = f;                                      // reference build ghosts the last digit
+        text(g.el, S.shownChain % 10); g.f = f;                                      // SENJIN ghosts the last digit
       }
       const ct = f - S.chainF;
       set(chain, 'opacity', h.combo > 1 ? Math.min(1, h.comboT / 24).toFixed(2) : '0');
@@ -176,10 +176,10 @@ export function createHud(root, game, { camera = null } = {}) {
         set(g.el, 'transform', `translate(${(e * 0.52).toFixed(3)}em, ${(-e * 0.3).toFixed(3)}em) scale(${(1 + 0.45 * e).toFixed(3)})`);
       });
 
-      // KO count (bottom right) counts up in reference build-style batches: every slam (>= 4 f apart) adds the KOs since the last
+      // KO count (bottom right) counts up in SENJIN-style batches: every slam (>= 4 f apart) adds the KOs since the last
       // one (a big Surge batch as +10/+15 slams, caught up within ~8 f), lands at ~3× and settles in 7 f, then a ghost
       // rings out. The milestone fires on the true count, on the KO frame, and only the highest one crossed (a mass KO
-      // from 18 to 54 shows "50", not "25" then "50"): every 50 like reference build, plus an early first one at 25 outside Surge.
+      // from 18 to 54 shows "50", not "25" then "50"): every 50 like SENJIN, plus an early first one at 25 outside Surge.
       if (h.kos < S.shownKo) S.shownKo = h.kos;
       if (h.kos > S.shownKo && f - S.koF >= 4) {
         const gap = h.kos - S.shownKo;
@@ -213,7 +213,7 @@ export function createHud(root, game, { camera = null } = {}) {
       set(koG, 'transform', `scale(${(1 + ring * 0.9).toFixed(3)})`);
       set(ko, 'opacity', S.shownKo === 0 ? '0' : Math.min(calm, f - S.koF > 300 ? 0.7 : 1).toFixed(2));   // hidden until the first KO
 
-      // KO milestone (centre), reference build timing (~0.3 s): slams in solid at 1.7× → 1 over 3 f with a white-hot flash, holds to
+      // KO milestone (centre), SENJIN timing (~0.3 s): slams in solid at 1.7× → 1 over 3 f with a white-hot flash, holds to
       // f 11, then slides left and fades out by f 18. The red 擊破 seal stamps down at f 2.
       const mt = f - S.mileF;
       if (mt < 19) {
@@ -267,7 +267,7 @@ export function createHud(root, game, { camera = null } = {}) {
         target.classList.toggle('ko', tKo);
       }
 
-      // floating officer tags (reference build): ▼▼ right on the officer's head top, name + red HP bar stacked above it. Every
+      // floating officer tags (SENJIN): ▼▼ right on the officer's head top, name + red HP bar stacked above it. Every
       // on-screen officer within 45 m gets one, scaled by camera distance (k 0.7-1, so CJK stays ≥ 17 px and Latin ≥ 9 px
       // at 720p) and faded out over the last 5 m. Only the tag body is ever moved — clear of the screen top, the target
       // bar, the intro card, the dialogue and the minimap (it slides left of the map instead of vanishing) — and when it
