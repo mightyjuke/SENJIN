@@ -1,5 +1,5 @@
 extends RefCounted
-## Pure fixed-step simulation: no scene tree, rendering, platform or input dependencies.
+## Pure fixed-step simulation. No renderer, scene tree, platform or input dependencies.
 ## Derived from the MIT SENJIN browser implementation; see legal/NOTICE.txt.
 const Moves = preload("res://scripts/move_data.gd")
 const DT: float = 1.0 / 60.0
@@ -41,7 +41,6 @@ var timers: PackedInt32Array = PackedInt32Array()
 var states: PackedInt32Array = PackedInt32Array()
 var officers: PackedByteArray = PackedByteArray()
 var count: int = 0
-var _seed: int = 2026
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _grid: Dictionary = {}
 var _seen: Dictionary = {}
@@ -60,8 +59,7 @@ var _surge_yaw: float = 0.0
 
 func setup(enemy_count: int = 180, seed_value: int = 2026) -> void:
 	count = clampi(enemy_count, 24, 1000)
-	_seed = seed_value
-	_rng.seed = _seed
+	_rng.seed = seed_value
 	frame = 0
 	wave = 1
 	kos = 0
@@ -85,6 +83,8 @@ func setup(enemy_count: int = 180, seed_value: int = 2026) -> void:
 	_run_frames = 0
 	_air_chain = 0
 	_wave_wait = 0
+	_seen.clear()
+	_stopped_windows.clear()
 	clear_commands()
 	positions.resize(count)
 	velocities.resize(count)
@@ -104,6 +104,9 @@ func forward() -> Vector3:
 
 func surge_ready() -> bool:
 	return hero_surge >= Moves.SURGE_COST and hero_position.y <= 0.001 and hero_state != "surge" and not game_over
+
+func _cell(p: Vector3) -> Vector2i:
+	return Vector2i(floori(p.x / CELL_SIZE), floori(p.z / CELL_SIZE))
 
 func query(center: Vector3, radius: float) -> Array[int]:
 	var found: Array[int] = []
@@ -126,9 +129,6 @@ func rebuild_grid() -> void:
 		if not _grid.has(key):
 			_grid[key] = []
 		_grid[key].append(i)
-
-func _cell(p: Vector3) -> Vector2i:
-	return Vector2i(floori(p.x / CELL_SIZE), floori(p.z / CELL_SIZE))
 
 func _spawn_wave() -> void:
 	alive = count
@@ -155,8 +155,7 @@ func step(movement: Vector2, actions: Array[String], camera_yaw: float = 0.0) ->
 		_buffer = ""
 	if frame - _last_hit > 150:
 		combo = 0
-	var direction: Vector3 = Vector3(movement.x, 0, movement.y).rotated(Vector3.UP, camera_yaw)
-	direction = direction.limit_length(1.0)
+	var direction: Vector3 = Vector3(movement.x, 0, movement.y).rotated(Vector3.UP, camera_yaw).limit_length(1.0)
 	for action in actions:
 		if action in ["attack", "charge", "dodge"]:
 			_buffer = action
@@ -174,7 +173,7 @@ func step(movement: Vector2, actions: Array[String], camera_yaw: float = 0.0) ->
 		game_over = true
 		hero_state = "defeated"
 		clear_commands()
-	if alive == 0:
+	if alive == 0 and not game_over:
 		_wave_wait += 1
 		if _wave_wait >= 180:
 			wave += 1
@@ -208,7 +207,7 @@ func _tick_hero(direction: Vector3) -> void:
 			action_started.emit("dodge")
 	if hero_state == "dodge":
 		hero_position += _dodge_direction * (4.6 / 24.0)
-		if state_frame >= 24:
+		if state_frame >= 23:
 			hero_state = "idle"
 		_clamp_hero()
 		return
@@ -314,6 +313,7 @@ func _start_surge() -> void:
 	surge_frame = 0
 	move_id = ""
 	_iframes = Moves.SURGE_END + 12
+	_hitstop = 0
 	_seen.clear()
 	clear_commands()
 	action_started.emit("surge")
@@ -325,7 +325,10 @@ func _tick_surge(direction: Vector3) -> void:
 			hero_yaw = lerp_angle(hero_yaw, atan2(-direction.x, -direction.z), 0.06)
 		hero_position += forward() * 10.0 * DT
 	if surge_frame == Moves.SURGE_CONTACT:
-		_sur ge_placeholder()
+		_surge_origin = hero_position
+		_surge_yaw = hero_yaw
+		strike(Moves.hit(0,0,"arc",9.5,12,210,6.5,8.2,0,true,2,0,6), 100, hero_position, hero_yaw)
+		action_started.emit("surge_contact")
 	if surge_frame > Moves.SURGE_CONTACT and surge_frame < Moves.SURGE_FINISHER:
 		hero_position += forward() * (2.4 / 44.0)
 		if surge_frame % 6 == 0:
@@ -339,10 +342,7 @@ func _tick_surge(direction: Vector3) -> void:
 		hero_state = "idle"
 		surge_frame = 0
 
-func _surge_contact() -> void:
-	_sur ge_noop()
-
-## Public hit resolution is also used by regression tests; caller supplies one window ID per attack.
+## Caller supplies one window ID per attack. Every target is hit once, or at its re-hit interval.
 func strike(h: Dictionary, window: int, origin: Vector3, yaw: float) -> int:
 	var reach: float = float(h.range) + 0.4
 	var hits: int = 0
@@ -368,14 +368,14 @@ func strike(h: Dictionary, window: int, origin: Vector3, yaw: float) -> int:
 				if delta.normalized().dot(aim) < cos(deg_to_rad(float(h.angle)) * 0.5):
 					continue
 		var key: Vector2i = Vector2i(window, i)
-		if _seen.has(key):
-			if int(h.every) <= 0 or frame - int(_seen[key]) < int(h.every):
-				continue
+		if _seen.has(key) and (int(h.every) <= 0 or frame - int(_seen[key]) < int(h.every)):
+			continue
 		_seen[key] = frame
 		health[i] -= float(h.damage)
 		var push: Vector3 = delta.normalized() if distance > 0.01 else direction
-		velocities[i] = push * float(h.force) * (0.55 if officers[i] else 1.0)
-		velocities[i].y = float(h.lift) * (0.65 if officers[i] else 1.0)
+		var velocity: Vector3 = push * float(h.force) * (0.55 if officers[i] else 1.0)
+		velocity.y = float(h.lift) * (0.65 if officers[i] else 1.0)
+		velocities[i] = velocity
 		states[i] = EnemyState.STUN
 		timers[i] = 24 if bool(h.heavy) else 12
 		var killed: bool = health[i] <= 0.0
@@ -449,7 +449,7 @@ func _tick_enemies() -> void:
 			timers[i] = 32 if officers[i] else 44
 			attackers += 1
 			continue
-		# Spread steering work over three ticks. Movement remains at 60 Hz.
+		# Think at 20 Hz per soldier; integrate at 60 Hz. No per-enemy nodes or navigation agents.
 		if (frame + i) % 3 == 0:
 			v = delta.normalized() * (3.4 if officers[i] else 2.5) if distance > 1.4 else Vector3.ZERO
 			for j in query(p, 1.3):
