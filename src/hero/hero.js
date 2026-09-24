@@ -87,7 +87,7 @@ function animDesc(h) {
     case 'surge': return [h.surgeClip, h.surgeT, 0, -2];
     case 'run': return ['run', h.runPhase, Math.min(1, h.speed / LOCO.runSpeed), -1];
     case 'dodge': return ['dodge', h.stateT / LOCO.dodgeFrames, 0, -100 - h.dodgeSeq];   // new seq per dodge → re-blend on a double dodge
-    // locomotion-dodge r2: after an air string (airN > 0) the fall uses the reference build spread-arm descent
+    // locomotion-dodge r2: after an air string (airN > 0) the fall uses the SENJIN tuning spread-arm descent
     case 'jump': return [h.airN ? 'airFall' : 'air', Math.min(1, Math.max(0, 0.5 - h.vy / (2 * LOCO.jumpV))), 0, -1];
     case 'land': return ['land', h.stateT / LOCO.landFrames, 0, -1];
     case 'hurt': return ['hurt', h.stateT / LOCO.hurtFrames, 0, -1];
