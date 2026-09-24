@@ -1,4 +1,4 @@
-// Crowd renderer (render-only). Voxel Wei soldiers built from shared instanced parts — hips, torso, head, arms,
+// Crowd renderer (render-only). Voxel enemy soldiers built from shared instanced parts — hips, torso, head, arms,
 // thighs, shins — plus per-kind weapons (spear, dao + round shield, captain glaive, fictional enemy standard) and a separate
 // officer set. Per soldier the parts form a small hierarchy (pelvis → torso → head/arms → weapon; pelvis → thigh →
 // shin) so knees bend, the torso twists and the weapon follows the hand. Poses come from sim state (walk / march /
@@ -210,7 +210,7 @@ export function createCrowdView(scene, game) {
   const geos = buildCrowdGeometries();
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0.06, flatShading: true });
   nearFade(mat, 2.4, (sh) => {
-    // backlit golden hour: a little self-light keeps the army from reading as black blocks, and the Wei reds
+    // backlit golden hour: a little self-light keeps the army from reading as black blocks, and the enemy reds
     // (headbands, crests, sashes) glow enough to read as a pattern at distance
     sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       #ifdef USE_COLOR
