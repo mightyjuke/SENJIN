@@ -1,9 +1,8 @@
-// Voxel the vanguard (concept: bench/concept.png). Every part is authored in voxel units, rasterised into a grid and meshed
-// with exposed faces only plus per-vertex ambient occlusion (lamellar gaps, folds and seams darken). One mesh per rig
-// joint. White-silver lamellar armour in overlapping plate rows (dark seams) over a gunmetal underlayer, a white scale mantle, flared
-// three-tier pauldrons, teal trim, headband with a silver plate, dark banded spear with a gold dragon collar.
-// Ponytail, ribbons, cape, front apron and the blue tassel are spring chains in secondary.js; the pauldrons half-follow
-// the upper arms (also secondary.js). The hero material gets a camera fill + warm rim so he reads in a dark crowd.
+// Original SENJIN vanguard model. Every part is authored in voxel units, rasterised into a grid and meshed
+// with exposed faces plus per-vertex ambient occlusion. The visual identity uses charcoal lamellar armour,
+// weathered steel, crimson cloth and an abstract geometric polearm guard rather than a historical character design.
+// Cloth strips, cape and tassel use spring chains in secondary.js; shoulder armour partially follows the upper arms.
+// The hero material gets a subtle camera fill and warm rim so the silhouette remains readable in dense crowds.
 import * as THREE from 'three';
 import { hash01 } from '../core/rng.js';
 import { shade } from '../core/voxel.js';
