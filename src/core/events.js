@@ -25,8 +25,8 @@
 //                                                                       surge frames (end, close-up cut, finisher, first mass hit)
 //  surge:hit     surge    {count, x,y,z, stage, yaw, n}                 one hit tick; stage 'contact' (first mass hit, 2.2 s)
 //                                                                       | 'front' (contact shock front rolling through the crowd)
-//                                                                       | 'dragon' (at the dragon head) | 'rush' | 'wave' (on the ring)
-//  surge:burst   surge    {count, x,y,z, frame}                         finisher: the ring wave starts at the vanguard
+//                                                                       | 'storm' (along the energy ribbon) | 'rush' | 'wave' (on the ring)
+//  surge:burst   surge    {count, x,y,z, frame}                         finisher: the radial finisher starts at the vanguard
 //  surge:end     surge    {frame}
 //  crowd:wave    crowd    {count, x,z}                                  reinforcements spawned
 const subs = new Map();
