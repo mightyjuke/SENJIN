@@ -159,7 +159,7 @@ export function buildCastle(scene, { wallZ, gateX }) {
   // wooden watchtowers out on the open flank beside the low sun, short enough that the whole tower sits inside the
   // gameplay frame at 85-100 m: [x, z, leg height, half leg spacing]
   const towers = [[gateX + 45, z0 + 14, 6.5, 1.5], [gateX + 61, z0 + 23, 8, 1.55], [gateX + 68, z0 + 2, 6, 1.45],
-    [17, -69, 5.5, 1.45], [-20, -70, 6, 1.5]];                        // + two Wei camp towers behind the south palisade
+    [17, -69, 5.5, 1.45], [-20, -70, 6, 1.5]];                        // + two enemy camp towers behind the south palisade
   for (const [x, z, h, s] of towers) watchtower(b, x, z, h, s);
   // siege works at the wall foot: scaling ladders and a roofed battering ram at the gate
   for (const lx of [-100, -70, -44, -24, 4]) {

@@ -1,6 +1,6 @@
-// DOM HUD in the DW8 layout with the concept's calligraphy: pixel portrait badge + long teal HP bar + 3-segment
-// musou gauge (bottom band), KO count with slam pops and 50-KO milestone seal (bottom right / centre, kept off the hero),
-// chain counter that rolls up hit by hit with DW8 ghost digits (left), officer target bar (top left) and stacked floating
+// Original SENJIN HUD: pixel portrait badge, compact health display, segmented Surge gauge,
+// surge gauge (bottom band), KO count with slam pops and 50-KO milestone seal (bottom right / centre, kept off the hero),
+// chain counter that rolls up hit by hit with SENJIN ghost digits (left), officer target bar (top left) and stacked floating
 // officer name/HP/▼▼ tags, square battlefield minimap with morale bar (top right), queued system banners and dialogue,
 // a title/controls intro card, and an idle auto-fade.
 // Render-only: reads sim state, never writes it. Animations are timed in sim frames.
@@ -10,8 +10,8 @@ import { on } from '../core/events.js';
 import { ST } from '../crowd/crowd.js';
 import { ARENA_RADIUS, WALL_Z, GATE_X } from '../world/world.js';
 
-const OFFICERS = [['夏侯恩', 'XIAHOU EN'], ['晏明', 'YAN MING'], ['淳于導', 'CHUNYU DAO'], ['張郃', 'ZHANG HE']];
-// 20×20 pixel portrait of Zhao Yun (voxel look): hair, teal headband, peach skin, white/teal armour collar.
+const OFFICERS = [['黒鋼', 'KUROGANE'], ['雷堂', 'RAIDO'], ['白蓮', 'BYAKUREN'], ['玄馬', 'GENMA']];
+// 20×20 pixel portrait of the original SENJIN vanguard: dark hair, crimson guard, warm skin and charcoal armour.
 const FACE = [
   '....................',
   '.......KKKKK........',
@@ -34,7 +34,7 @@ const FACE = [
   '.WWWWWWTWWWWTWWWWW..',
   'WWwwWWWWTWWTWWWWwwW.',
 ];
-const PAL = { K: '#1d1514', k: '#4a3834', S: '#efc3a0', s: '#c38a6c', E: '#140c0c', M: '#7e3a2e', T: '#3fb8b0', t: '#1f5f5c', W: '#efe8de', w: '#ffffff' };
+const PAL = { K: '#181516', k: '#45383a', S: '#efc3a0', s: '#c38a6c', E: '#140c0c', M: '#7e3a2e', T: '#b43b32', t: '#65231f', W: '#4c4f55', w: '#787d84' };
 
 function paintFace(cv) {
   const g = cv.getContext('2d');
@@ -44,21 +44,21 @@ function paintFace(cv) {
 export function createHud(root, game, { camera = null } = {}) {
   game.hudTagR = 44.7;   // render-only seam: crowd view skips its 3D officer ▼ where the floating tags below take over
   root.innerHTML = `
-    <div class="h-intro"><div class="zh">趙雲</div><i class="seal">常山</i><div class="en">ZHAO YUN</div>
-      <div class="sub">常山龍膽 · 單騎無雙 · 義貫雲天</div>
+    <div class="h-intro"><div class="zh">先陣</div><i class="seal">先陣</i><div class="en">VANGUARD</div>
+      <div class="sub">疾風迅雷 · 孤軍破陣 · 一閃千軍</div>
       <div class="keys"><kbd>WASD</kbd> 移動 move · <kbd>J</kbd> 攻擊 attack · <kbd>K</kbd> 蓄力 charge<br>
-        <kbd>Space</kbd> 跳躍 jump · <kbd>L</kbd> 閃避 dodge · <kbd>I</kbd> 無雙 musou · <kbd>Q</kbd><kbd>E</kbd> 視角 · <kbd>H</kbd> 說明</div></div>
+        <kbd>Space</kbd> 跳躍 jump · <kbd>L</kbd> 閃避 dodge · <kbd>I</kbd> 破陣 surge · <kbd>Q</kbd><kbd>E</kbd> 視角 · <kbd>H</kbd> 說明</div></div>
     <div class="h-target"><i class="seal">將</i><b></b><span></span><div class="bar"><em></em><i></i></div><strong>擊破</strong></div>
-    <div class="h-map"><div class="morale"><i></i><span>蜀</span><span>魏</span></div><canvas width="200" height="200"></canvas><i class="seal">長坂</i></div>
+    <div class="h-map"><div class="morale"><i></i><span>盟</span><span>敵</span></div><canvas width="200" height="200"></canvas><i class="seal">荒野</i></div>
     <div class="h-offs">${OFFICERS.map(([zh, en]) => `<div class="off"><i class="ld"></i><div class="mk">▼▼</div><div class="bd"><b>${zh}</b><span>${en}</span><div class="bar"><em></em><i></i></div></div></div>`).join('')}</div>
     <div class="h-chain"><div class="num"><b class="dig" data-t="0"><span>0</span></b><u></u><u></u><u></u></div><small><em>連擊</em>CHAIN</small></div>
     <div class="h-mile"><b class="dig" data-t="50"><span>50</span></b><i class="seal">擊破</i></div>
     <div class="h-band"><p></p><small></small></div>
-    <div class="h-dlg"><canvas width="20" height="20"></canvas><div><b>趙雲 <span>ZHAO YUN</span></b><p></p><small></small></div></div>
+    <div class="h-dlg"><canvas width="20" height="20"></canvas><div><b>先陣 <span>VANGUARD</span></b><p></p><small></small></div></div>
     <div class="h-copy">長槍所向<br>百軍皆破</div>
-    <div class="h-player"><div class="badge"><canvas width="20" height="20"></canvas></div><div class="name">趙雲</div>
+    <div class="h-player"><div class="badge"><canvas width="20" height="20"></canvas></div><div class="name">先陣</div>
       <div class="bar hp"><em></em><i></i></div>
-      <div class="mu"><div><i></i></div><div><i></i></div><div><i></i></div><span>無雙</span></div></div>
+      <div class="mu"><div><i></i></div><div><i></i></div><div><i></i></div><div><i></i></div><span>破陣</span></div></div>
     <div class="h-ko"><div class="num"><b class="dig" data-t="0"><span>0</span></b><u></u></div><small><em>擊破</em>K.O. COUNT</small></div>`;
   const $ = (s) => root.querySelector(s), $$ = (s) => [...root.querySelectorAll(s)];
   const intro = $('.h-intro'), player = $('.h-player'), hpI = $('.hp i'), hpE = $('.hp em'), muSeg = $$('.mu i'), mu = $('.mu');
@@ -79,20 +79,20 @@ export function createHud(root, game, { camera = null } = {}) {
   const reset = () => Object.assign(S, {
     lastCombo: 0, shownChain: 0, chainF: -99, chainQ: [], ghostN: 0, shownKo: 0, koF: -99, mile: 0, mileF: -99, mileTop: 33, mileDim: 1,
     lagHp: 1, lastF: 0, hurtF: -99, actF: 0, band: null, bandQ: [], dlg: null, waveF: -999, tgt: -1, tgtF: -999, tgtKoF: -999,
-    musouF: -999, musouEnd: -999, waves: [], introCut: 0,
+    surgeF: -999, surgeEnd: -999, waves: [], introCut: 0,
   });
   reset();
   // heavy numerals: the rim layer (::before) reads data-t, the gradient face is the inner span
   const num = (el, v) => { v = String(v); if (el.dataset.t !== v) { el.dataset.t = v; el.firstChild.textContent = v; } };
   const resetText = () => { num(koB, 0); koG.textContent = '0'; };
   let showKeys = null;
-  // system banners queue (one at a time, held back while the Musou plays); dialogue (top left) and the banner band
-  // (y 64-70 %) sit apart, so neither cancels the other. Dialogue holds 5 s like DW8.
+  // system banners queue (one at a time, held back while the Surge plays); dialogue (top left) and the banner band
+  // (y 64-70 %) sit apart, so neither cancels the other. Dialogue holds 5 s like SENJIN.
   const banner = (html, en, dur = 150) => { if (S.bandQ.length < 3) S.bandQ.push({ html, en, dur }); };
   const say = (zh, en, dur = 300) => { S.dlg = { zh, en, f: game.frame, dur }; };
-  on('scenario', (e) => { reset(); resetText(); if (e.name === 'crowd' || e.name === 'arena') S.dlg = { zh: '主公之子在此，趙雲誓死護之！', en: 'My lord\'s son is in my care. None of you shall pass!', f: 185, dur: 300 }; });
+  on('scenario', (e) => { reset(); resetText(); if (e.name === 'crowd' || e.name === 'arena') S.dlg = { zh: '防線在我身後，誰也別想越過！', en: 'The line is under my protection. None of you shall pass!', f: 185, dur: 300 }; });
   on('crowd:wave', (e) => {
-    if (game.frame - S.waveF > 600) { S.waveF = game.frame; banner('<em>魏軍</em>援兵 到着', 'Wei reinforcements have arrived!', 130); }
+    if (game.frame - S.waveF > 600) { S.waveF = game.frame; banner('<em>敵軍</em>援兵 到着', 'Enemy reinforcements have arrived!', 130); }
     S.waves.push({ x: e.x, z: e.z, f: game.frame });
   });
   on('hit', (e) => { S.actF = game.frame; if (e.officer) { S.tgt = e.i; S.tgtF = game.frame; } });
@@ -103,8 +103,8 @@ export function createHud(root, game, { camera = null } = {}) {
     banner(`敵將 <em>${zh}</em> 擊破！`, `Enemy officer ${en.replace(/\b(\w)(\w*)/g, (m, a, b) => a + b.toLowerCase())} defeated!`, 150);
     S.tgt = e.i; S.tgtKoF = game.frame;
   });
-  on('musou:start', () => { S.musouF = S.actF = game.frame; S.band = null; S.dlg = null; });
-  on('musou:end', () => { S.musouEnd = game.frame; say('吾乃常山趙子龍也！', 'I am Zhao Zilong of Changshan!'); S.dlg.f += 20; });
+  on('surge:start', () => { S.surgeF = S.actF = game.frame; S.band = null; S.dlg = null; });
+  on('surge:end', () => { S.surgeEnd = game.frame; say('敵陣已破，繼續前進！', 'The formation is broken. Advance!'); S.dlg.f += 20; });
   on('hero:hurt', () => { S.hurtF = S.actF = game.frame; });
   addEventListener('keydown', (e) => { if (e.code === 'KeyH') showKeys = !(showKeys ?? true); });
 
@@ -119,19 +119,19 @@ export function createHud(root, game, { camera = null } = {}) {
       const h = game.hero, f = game.frame, c = game.crowd;
       const W = root.clientWidth, H = root.clientHeight;
       const df = Math.max(0, f - S.lastF); S.lastF = f;
-      const inMusou = h.state === 'musou';
+      const inSurge = h.state === 'surge';
 
       // intro card (title + controls): first 3.5 s of a scenario; H toggles the controls back
       // (an officer tag that would land on the card fades it out instead of being shoved aside: S.introCut, set below)
-      const introA = showKeys === false || S.musouF >= 0 ? 0 : clamp01((180 - f) / 30) * (1 - S.introCut);
+      const introA = showKeys === false || S.surgeF >= 0 ? 0 : clamp01((180 - f) / 30) * (1 - S.introCut);
       set(intro, 'opacity', (showKeys ? 1 : introA).toFixed(2));
 
-      // idle auto-fade (quieter than DW8 at rest): 4 s after the last attack/hit/hurt, the player band, minimap and KO
-      // count ease to 55 % over 40 f; the next action snaps them back. A full musou gauge keeps the band lit.
-      const calm = 1 - 0.45 * clamp01((f - S.actF - 240) / 40) * (game.musou.ready() ? 0 : 1);
+      // idle auto-fade (quieter than SENJIN at rest): 4 s after the last attack/hit/hurt, the player band, minimap and KO
+      // count ease to 55 % over 40 f; the next action snaps them back. A full surge gauge keeps the band lit.
+      const calm = 1 - 0.45 * clamp01((f - S.actF - 240) / 40) * (game.surge.ready() ? 0 : 1);
       set(player, 'opacity', calm.toFixed(2)); set(mapEl, 'opacity', calm.toFixed(2));
 
-      // HP (teal, white lag bar) + 3-segment musou gauge
+      // HP + original four-segment Surge gauge
       const hp = h.hp / h.hpMax;
       S.lagHp = f - S.hurtF < 20 ? S.lagHp : Math.max(hp, S.lagHp - 0.008 * df);
       if (S.lagHp < hp) S.lagHp = hp;
@@ -139,21 +139,21 @@ export function createHud(root, game, { camera = null } = {}) {
       set(hpE, 'transform', `scaleX(${S.lagHp.toFixed(4)})`);
       player.classList.toggle('low', hp < 0.3);
       player.classList.toggle('hurt', f - S.hurtF < 12);
-      const m3 = h.musou / h.musouMax * 3;
-      muSeg.forEach((el, k) => set(el, 'transform', `scaleX(${(Math.floor(clamp01(m3 - k) * 32) / 32).toFixed(4)})`));  // pixel-stepped fill
-      const full = game.musou.ready() && !inMusou;                   // musou part r3: ready at one full segment (one Musou spends one)
+      const m4 = h.surge / h.surgeMax * 4;
+      muSeg.forEach((el, k) => set(el, 'transform', `scaleX(${(Math.floor(clamp01(m4 - k) * 32) / 32).toFixed(4)})`));  // pixel-stepped fill
+      const full = game.surge.ready() && !inSurge;                   // surge part r3: ready at one full segment (one Surge spends one)
       mu.classList.toggle('full', full);
-      if (full) {                                                    // ready: glow pulse + glint sweeping the 3 segments
+      if (full) {                                                    // ready: glow pulse + glint sweeping the four segments
         mu.style.setProperty('--p', (0.5 + 0.5 * Math.sin(f * 0.12)).toFixed(2));
-        const sw = (f % 90) / 50 * 3.6 - 0.3;
+        const sw = (f % 90) / 50 * 4.6 - 0.3;
         muSeg.forEach((el, k) => el.style.setProperty('--s', `${((sw - k) * 100).toFixed(1)}%`));
       }
-      mu.classList.toggle('active', inMusou);
+      mu.classList.toggle('active', inSurge);
 
       // chain counter (left). Combat resolves a whole swing's hits on one sim frame, so the shown number rolls up to
-      // h.combo in DW8-style ticks instead of jumping: one tick every 2 f, the first on the hit frame, front-loaded steps
+      // h.combo in SENJIN-style ticks instead of jumping: one tick every 2 f, the first on the hit frame, front-loaded steps
       // (+4 +3 +3 +2 +2 +2 for a 16-hit sweep). Each hit batch is queued as [frame, combo] and shown within 10 f (6 ticks),
-      // so a long Musou stream never falls behind. Every tick spawns a ghost of the new last digit (pool of 3, so a roll
+      // so a long Surge stream never falls behind. Every tick spawns a ghost of the new last digit (pool of 3, so a roll
       // leaves a trail): 1.45× up-right with a smear, merging into the number in 6 f.
       if (h.combo < S.shownChain) { S.shownChain = 0; S.chainF = -99; S.chainQ.length = 0; }   // chain broke: roll from 0
       if (h.combo !== S.lastCombo) { if (h.combo > S.lastCombo) S.chainQ.push([f, h.combo]); S.lastCombo = h.combo; }
@@ -165,7 +165,7 @@ export function createHud(root, game, { camera = null } = {}) {
         while (S.chainQ.length && S.chainQ[0][1] <= S.shownChain) S.chainQ.shift();
         S.chainF = f; num(chainB, S.shownChain);
         const g = chainG[S.ghostN++ % chainG.length];
-        text(g.el, S.shownChain % 10); g.f = f;                                      // DW8 ghosts the last digit
+        text(g.el, S.shownChain % 10); g.f = f;                                      // SENJIN ghosts the last digit
       }
       const ct = f - S.chainF;
       set(chain, 'opacity', h.combo > 1 ? Math.min(1, h.comboT / 24).toFixed(2) : '0');
@@ -176,10 +176,10 @@ export function createHud(root, game, { camera = null } = {}) {
         set(g.el, 'transform', `translate(${(e * 0.52).toFixed(3)}em, ${(-e * 0.3).toFixed(3)}em) scale(${(1 + 0.45 * e).toFixed(3)})`);
       });
 
-      // KO count (bottom right) counts up in DW8-style batches: every slam (>= 4 f apart) adds the KOs since the last
-      // one (a big Musou batch as +10/+15 slams, caught up within ~8 f), lands at ~3× and settles in 7 f, then a ghost
+      // KO count (bottom right) counts up in SENJIN-style batches: every slam (>= 4 f apart) adds the KOs since the last
+      // one (a big Surge batch as +10/+15 slams, caught up within ~8 f), lands at ~3× and settles in 7 f, then a ghost
       // rings out. The milestone fires on the true count, on the KO frame, and only the highest one crossed (a mass KO
-      // from 18 to 54 shows "50", not "25" then "50"): every 50 like DW8, plus an early first one at 25 outside Musou.
+      // from 18 to 54 shows "50", not "25" then "50"): every 50 like SENJIN, plus an early first one at 25 outside Surge.
       if (h.kos < S.shownKo) S.shownKo = h.kos;
       if (h.kos > S.shownKo && f - S.koF >= 4) {
         const gap = h.kos - S.shownKo;
@@ -188,12 +188,12 @@ export function createHud(root, game, { camera = null } = {}) {
       }
       const m = mileOf(h.kos);
       if (m < S.mile) S.mile = m;
-      if (m > S.mile && inMusou && m === 25) S.mile = m;                // a Musou always runs past 50: only "50" pops
+      if (m > S.mile && inSurge && m === 25) S.mile = m;                // a Surge always runs past 50: only "50" pops
       if (m > S.mile) {
         S.mile = m; S.mileF = f; num(mileB, m);
         S.shownKo = h.kos; S.koF = f; num(koB, h.kos); text(koG, h.kos);  // the corner count slams to the true total with it
-        // keep the popup off Zhao Yun: its digits span x 42-61 %, y (top + 4) … (top + 19) %. If his screen box would sit
-        // under them, lift it clear of his head; if there is no room above (close Musou shots), fade it to 40 %.
+        // keep the popup off the vanguard: its digits span x 42-61 %, y (top + 4) … (top + 19) %. If his screen box would sit
+        // under them, lift it clear of his head; if there is no room above (close Surge shots), fade it to 40 %.
         S.mileTop = 33; S.mileDim = 1;
         if (camera) {
           v3.set(h.x, h.y + 2.05, h.z).project(camera); const hx = (v3.x + 1) / 2, hy = (1 - v3.y) / 2, front = v3.z < 1;
@@ -213,7 +213,7 @@ export function createHud(root, game, { camera = null } = {}) {
       set(koG, 'transform', `scale(${(1 + ring * 0.9).toFixed(3)})`);
       set(ko, 'opacity', S.shownKo === 0 ? '0' : Math.min(calm, f - S.koF > 300 ? 0.7 : 1).toFixed(2));   // hidden until the first KO
 
-      // KO milestone (centre), DW8 timing (~0.3 s): slams in solid at 1.7× → 1 over 3 f with a white-hot flash, holds to
+      // KO milestone (centre), SENJIN timing (~0.3 s): slams in solid at 1.7× → 1 over 3 f with a white-hot flash, holds to
       // f 11, then slides left and fades out by f 18. The red 擊破 seal stamps down at f 2.
       const mt = f - S.mileF;
       if (mt < 19) {
@@ -227,7 +227,7 @@ export function createHud(root, game, { camera = null } = {}) {
       } else set(mile, 'opacity', '0');
 
       // system banner (full-width band, y 64-70 %) and dialogue (portrait + 2 lines, top left: keeps the centre clear)
-      if ((!S.band || f - S.band.f >= S.band.dur) && S.bandQ.length && !inMusou) S.band = { ...S.bandQ.shift(), f };
+      if ((!S.band || f - S.band.f >= S.band.dur) && S.bandQ.length && !inSurge) S.band = { ...S.bandQ.shift(), f };
       const b = S.band, bt = b ? f - b.f : 1e9;
       if (b && bt < b.dur) {
         if (bandP.innerHTML !== b.html) { bandP.innerHTML = b.html; text(bandS, b.en); }
@@ -241,9 +241,9 @@ export function createHud(root, game, { camera = null } = {}) {
         set(dlg, 'transform', `translateX(${(-Math.max(0, 1 - dt / 8) * 2).toFixed(2)}rem)`);
       } else set(dlg, 'opacity', '0');
 
-      // musou: vertical calligraphy copy on the right (concept) while the musou runs
-      const mf = f - S.musouF, me = f - S.musouEnd;
-      const copyA = inMusou || me < 30 ? Math.min(clamp01((mf - 8) / 14), me >= 0 && me < 30 ? 1 - me / 30 : 1) : 0;
+      // surge: vertical calligraphy copy on the right (concept) while the surge runs
+      const mf = f - S.surgeF, me = f - S.surgeEnd;
+      const copyA = inSurge || me < 30 ? Math.min(clamp01((mf - 8) / 14), me >= 0 && me < 30 ? 1 - me / 30 : 1) : 0;
       set(copy, 'opacity', copyA.toFixed(2));
 
       // officer target bar (top left): last officer hit (10 s) or the nearest officer within 9 m
@@ -267,7 +267,7 @@ export function createHud(root, game, { camera = null } = {}) {
         target.classList.toggle('ko', tKo);
       }
 
-      // floating officer tags (DW8): ▼▼ right on the officer's head top, name + red HP bar stacked above it. Every
+      // floating officer tags (SENJIN): ▼▼ right on the officer's head top, name + red HP bar stacked above it. Every
       // on-screen officer within 45 m gets one, scaled by camera distance (k 0.7-1, so CJK stays ≥ 17 px and Latin ≥ 9 px
       // at 720p) and faded out over the last 5 m. Only the tag body is ever moved — clear of the screen top, the target
       // bar, the intro card, the dialogue and the minimap (it slides left of the map instead of vanishing) — and when it
@@ -341,7 +341,7 @@ export function createHud(root, game, { camera = null } = {}) {
         if (L > rem) set(o.ld, 'transform', `translate(0, ${(-o.mkH).toFixed(1)}px) rotate(${Math.atan2(vx, -vy).toFixed(3)}rad) scaleY(${L.toFixed(1)})`);
       }
 
-      // morale (蜀 blue vs 魏 red) from KOs against the enemies still standing
+      // morale (盟 blue vs 敵 red) from KOs against the enemies still standing
       let alive = 0;
       for (let i = 0; i < c.N; i++) if (c.st[i] !== ST.OFF && c.st[i] !== ST.DEAD) alive++;
       set(moraleI, 'transform', `scaleX(${(0.3 + 0.65 * h.kos / (h.kos + alive + 1)).toFixed(4)})`);

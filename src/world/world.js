@@ -1,7 +1,7 @@
 // Battlefield, as in the concept: a low golden-hour sun in frame between the castle's corner tower and the watchtowers
 // on the open flank (the gameplay camera's frame top is only ≈ 5° above level), sun-aware aerial haze (warm
 // toward the sun, mauve away), voxel cobbled plaza + road to the gate, stone curtain wall with bastions, gatehouse and
-// watchtowers, 魏/蜀 banners with cloth motion, fires with smoke columns and embers, the Wei camp ring, and layered
+// watchtowers, fictional enemy/ally banners with cloth motion, fires with smoke columns and embers, the enemy camp ring, and layered
 // mountains. Render-only: never touches sim state; all animation is a pure function of render time.
 import * as THREE from 'three';
 import { SUN_DIR, HAZE, installHaze, createSky } from './sky.js';

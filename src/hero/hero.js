@@ -1,4 +1,4 @@
-// Hero glue. Sim side: owns Zhao Yun's state and runs combo/locomotion/physics each fixed step, plus animation
+// Hero glue. Sim side: owns the vanguard's state and runs combo/locomotion/physics each fixed step, plus animation
 // bookkeeping (which clip, normalised time, blend-from) so the rendered pose is a pure function of sim state.
 // Render side: createHeroView builds rig + voxel model + secondary chains and poses them from the sim state.
 import * as THREE from 'three';
@@ -13,18 +13,18 @@ import { stepLocomotion, stepPhysics, setState, LOCO } from './locomotion.js';
 import { ARENA_RADIUS, WALL_Z } from '../world/world.js';
 import { emit } from '../core/events.js';
 
-/** Clip registry sampled by the hero. Other parts (musou) register their clips here. */
+/** Clip registry sampled by the hero. Other parts (surge) register their clips here. */
 export const CLIPS = { ...ATTACK_CLIPS, ...LOCO_CLIPS };
 
 export function createHero(game) {
   const h = {
     x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0,
-    hp: 400, hpMax: 400, musou: 0, musouMax: 100,
+    hp: 400, hpMax: 400, surge: 0, surgeMax: 100,
     state: 'idle', stateT: 0, move: null, moveT: 0, moveSeq: 0,
     grounded: true, airAttack: false, iframes: 0, speed: 0, runT: 0, runPhase: 0,
     combo: 0, comboT: 0, kos: 0,
-    buf: null, bufT: 0, dodgeBuf: 0, jumpBuf: 0, musouBuf: 0, dodgeX: 0, dodgeZ: 1,
-    musouClip: null, musouT: 0,
+    buf: null, bufT: 0, dodgeBuf: 0, jumpBuf: 0, surgeBuf: 0, dodgeX: 0, dodgeZ: 1,
+    surgeClip: null, surgeT: 0,
     airN: 0, moveAir: false,                                  // combo-system: air-string count, vault
     dodgeSeq: 0,
     anim: { id: 'idle', t: 0, k: 0, seq: -1, pid: null, pt: 0, pk: 0, blendF: 1, blendN: 1, from: new Float32Array(POSE_SIZE), yaw: 0,
@@ -34,18 +34,18 @@ export function createHero(game) {
   };
 
   h.reset = ({ x = 0, z = 0, yaw = 0 } = {}) => {
-    Object.assign(h, { x, y: 0, z, vx: 0, vy: 0, vz: 0, yaw, hp: h.hpMax, musou: 0, state: 'idle', stateT: 0, move: null,
+    Object.assign(h, { x, y: 0, z, vx: 0, vy: 0, vz: 0, yaw, hp: h.hpMax, surge: 0, state: 'idle', stateT: 0, move: null,
       moveT: 0, moveSeq: 0, grounded: true, airAttack: false, iframes: 0, speed: 0, runT: 0, runPhase: 0, combo: 0, comboT: 0,
-      kos: 0, buf: null, bufT: 0, dodgeBuf: 0, jumpBuf: 0, musouBuf: 0, musouClip: null, musouT: 0,
+      kos: 0, buf: null, bufT: 0, dodgeBuf: 0, jumpBuf: 0, surgeBuf: 0, surgeClip: null, surgeT: 0,
       airN: 0, moveAir: false, dodgeSeq: 0 });
     Object.assign(h.anim, { id: 'idle', t: 0, k: 0, seq: -1, pid: null, pt: 0, pk: 0, blendF: 1, blendN: 1, yaw, lean: 0, fx: x, fz: z, px: x, pz: z, mf: null, mt: 0 });
   };
 
   /** Called by combat when an enemy strike connects. Any attack move armours against grunts; officers need `armor`. */
   h.hurt = (dmg, fromX, fromZ, officer) => {
-    if (h.iframes > 0 || h.state === 'musou' || h.state === 'dodge') return false;
+    if (h.iframes > 0 || h.state === 'surge' || h.state === 'dodge') return false;
     h.hp = Math.max(1, h.hp - dmg);            // v0: the hero cannot die (demo keeps running)
-    h.musou = Math.min(h.musouMax, h.musou + dmg * 0.15);
+    h.surge = Math.min(h.surgeMax, h.surge + dmg * 0.15);
     const armored = !!h.move && (!officer || MOVES[h.move].armor);
     emit('hero:hurt', { dmg, hp: h.hp, x: h.x, y: h.y + 1.2, z: h.z, armored });
     if (armored) return true;
@@ -59,15 +59,15 @@ export function createHero(game) {
 
   h.step = (inp) => {
     bufferInput(h, inp);
-    if (inp.pressed.musou) h.musouBuf = 8;
+    if (inp.pressed.surge) h.surgeBuf = 8;
     if (game.hitstop > 0) { game.hitstop--; return; }        // frozen by hitstop; presses stay buffered
     h.stateT++;
     if (h.iframes > 0) h.iframes--;
     if (h.comboT > 0 && --h.comboT === 0) h.combo = 0;
-    if (h.musouBuf > 0) h.musouBuf--;
-    if (h.state === 'musou') game.musou.stepHero(inp);
-    // musou part r3: one full gauge segment is enough (game.musou.ready; one Musou spends one of the 3 segments)
-    else if (h.musouBuf && game.musou.ready() && h.grounded && h.state !== 'hurt') { h.musouBuf = 0; game.musou.start(inp); }
+    if (h.surgeBuf > 0) h.surgeBuf--;
+    if (h.state === 'surge') game.surge.stepHero(inp);
+    // surge part r3: one full gauge segment is enough (game.surge.ready; one Surge spends one of the four segments)
+    else if (h.surgeBuf && game.surge.ready() && h.grounded && h.state !== 'hurt') { h.surgeBuf = 0; game.surge.start(inp); }
     else if (!stepCombo(h, inp, game)) stepLocomotion(h, inp, game.cam.yaw);
     if (stepPhysics(h) && h.state === 'jump') setState(h, 'land');
     // arena bounds (castle wall in +Z)
@@ -84,10 +84,10 @@ function animDesc(h) {
   switch (h.state) {
     // combo-system seam: moves.js `anim` retimes the clip (holds, snaps, clip cuts); a cut counts as a new anim seq → blend
     case 'attack': { const c = moveClip(MOVES[h.move], h.moveT); return [c[0], c[1], 0, h.moveSeq * 16 + c[2]]; }
-    case 'musou': return [h.musouClip, h.musouT, 0, -2];
+    case 'surge': return [h.surgeClip, h.surgeT, 0, -2];
     case 'run': return ['run', h.runPhase, Math.min(1, h.speed / LOCO.runSpeed), -1];
     case 'dodge': return ['dodge', h.stateT / LOCO.dodgeFrames, 0, -100 - h.dodgeSeq];   // new seq per dodge → re-blend on a double dodge
-    // locomotion-dodge r2: after an air string (airN > 0) the fall uses the DW8 spread-arm descent
+    // locomotion-dodge r2: after an air string (airN > 0) the fall uses the SENJIN tuning spread-arm descent
     case 'jump': return [h.airN ? 'airFall' : 'air', Math.min(1, Math.max(0, 0.5 - h.vy / (2 * LOCO.jumpV))), 0, -1];
     case 'land': return ['land', h.stateT / LOCO.landFrames, 0, -1];
     case 'hurt': return ['hurt', h.stateT / LOCO.hurtFrames, 0, -1];

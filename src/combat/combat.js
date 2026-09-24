@@ -2,7 +2,7 @@
 // damage, hitstop, knockback / launch / juggle / spin physics and reaction states on enemies, KO, enemy strikes.
 // Emits: attack:swing, hit, hits, ko, enemy:attack, enemy:land.
 //
-// Feel targets (bench/notes/hit-feedback.md):
+// Feel targets (internal tuning notes):
 // - Hitstop is hero-local and scaled: 1 sf per mook tick + 1 per 5 extra victims (cap 4), 6-8 sf on heavy contact.
 //   Victims shudder for at most 3 sf, then react — the weight comes from their reactions, not a freeze.
 // - Launch: ≈1 s airborne with a ≈0.3 s apex float, tumbling to horizontal, one small rebound, down ≥ 2 s.
@@ -26,7 +26,7 @@ export const COMBAT = {
   launchMaxV: 2.5,                      // radial (circle) launchers: bodies go up, not out at the camera
   heavyBlow: [0.65, 1.2],               // hero finishers: horizontal × 0.65, lift × 1.2 → thrown 2-3 H
   juggleY: 2.4,                         // juggled bodies hover around 1.2-1.6 H instead of climbing
-  musouPerHit: 0.3, musouPerKO: 0.55,   // musou part r3: one Musou now spends one of 3 segments, so a segment fills at the old whole-bar rate (≈ 90 hits)
+  surgePerHit: 0.3, surgePerKO: 0.55,   // surge part r3: one Surge now spends one of 3 segments, so a segment fills at the old whole-bar rate (≈ 90 hits)
   // flinch: the victim snaps round to face the blow and stumbles back ≈ 0.3 H (force 3) with its arms thrown up
   // (pose: hitfx.js recoilPose); a grunt hit by a 'push' is knocked flat on its back, floor in ≈ 12 sf
   flinchKick: 1.6, flinchDamp: 0.85, knockLift: 1.7, knockK: 0.7,
@@ -69,7 +69,7 @@ export function createCombat(game) {
     return Math.abs(a) <= hit.ang * Math.PI / 360;
   }
 
-  /** Hero hitstop for one tick of `hit` that connected with `count` enemies (musou keeps its own numbers). */
+  /** Hero hitstop for one tick of `hit` that connected with `count` enemies (surge keeps its own numbers). */
   function heroStop(hit, count, moveId, key) {
     const base = hit.hitstop || 0;
     if (!base || !MOVES[moveId]) return base;
@@ -83,7 +83,7 @@ export function createCombat(game) {
 
   /**
    * Resolve one hitbox window tick from origin (ox,oz,yaw). key identifies the window (an enemy is hit once per key
-   * unless `rehit`). Returns the number of enemies hit. Used by hero moves and the Musou.
+   * unless `rehit`). Returns the number of enemies hit. Used by hero moves and the Surge.
    */
   cb.strike = (hit, ox, oz, yaw, key, rehit, moveId) => {
     const c = game.crowd;
@@ -162,7 +162,7 @@ export function createCombat(game) {
     }
     const sgn = hash01(i, 71) < 0.5 ? -1 : 1, var01 = hash01(i, 13);
     // hero blow-aways never fly into the lens: a throw toward the camera swings sideways (same speed), so it crosses
-    // the screen instead of filling it; the Musou keeps its full radial fan
+    // the screen instead of filling it; the Surge keeps its full radial fan
     let bx = dx, bz = dz;
     const cx = -Math.sin(game.cam.yaw), cz = -Math.cos(game.cam.yaw), tc = dx * cx + dz * cz;
     if (MOVES[moveId] && tc > 0.3) {
@@ -211,7 +211,7 @@ export function createCombat(game) {
     }
     // hero rewards
     h.combo++; h.comboT = COMBAT.comboWindow;
-    if (h.state !== 'musou') h.musou = Math.min(h.musouMax, h.musou + COMBAT.musouPerHit + (killed ? COMBAT.musouPerKO : 0));
+    if (h.state !== 'surge') h.surge = Math.min(h.surgeMax, h.surge + COMBAT.surgePerHit + (killed ? COMBAT.surgePerKO : 0));
     emit('hit', { i, x: c.x[i], y: c.y[i] + 1.1, z: c.z[i], dx, dz, dmg: hit.dmg, kb, move: moveId, combo: h.combo, killed, officer, heavy: !!hit.heavy });
     if (killed) {
       h.kos++;

@@ -1,17 +1,17 @@
 // Battle audio. Plays the offline-baked bank (bank.js) off bus events:
-//  swing whooshes by move shape/weight + Zhao Yun kiai, cued LEAD sim frames before each hitbox window opens (sound leads
+//  swing whooshes by move shape/weight + the vanguard kiai, cued LEAD sim frames before each hitbox window opens (sound leads
 //  the trail) · layered slash impacts on the `hits` frame (click + crack + thwack + thump + crunch, armour clank; 3+
 //  victims add a body-cluster layer and packed crunch grains) with a post-hitstop "blow-away" release on heavy hits ·
-//  enemy grunts, death cries, body falls · dodge / jump / land / hurt · Musou gauge chime, activation flash + shout,
+//  enemy grunts, death cries, body falls · dodge / jump / land / hurt · Surge gauge chime, activation flash + shout,
 //  close-up hush + charge drone swelling into the contact blast, stab flurry, pre-burst inhale, finishing blast + death
 //  chorus · reinforcement horn + army roar · foreground army shouts ·
 //  looping distant-battle bed, war drums and a power-chord battle riff (music=0 drops it) that swell with combat
-//  intensity and duck under hits and the Musou.
-// Mix: sfx / voice / bed buses + convolution reverb send → master EQ (matched to the benchmark clips' octave balance) →
+//  intensity and duck under hits and the Surge.
+// Mix: sfx / voice / bed buses + convolution reverb send → master EQ (matched to SENJIN's internal mix target) →
 // compressor (25 ms attack: transients pass) → soft-clip ceiling (≈ -2 dBFS, no clipping); ≈ -17 LUFS in crowd-fight
-// (benchmark -14 … -19). Impacts own the transient: every hit tick sidechains the whooshes / body falls (under bus), the
+// (target range -14 … -19). Impacts own the transient: every hit tick sidechains the whooshes / body falls (under bus), the
 // bed, the voices and the reverb return for 50-100 ms — through to the next tick inside a multi-tick window, which builds
-// to a heavier last blow — and flurry whoosh pulses land ON their ticks, so multi-tick moves (C3, C4, C6, the Musou
+// to a heavier last blow — and flurry whoosh pulses land ON their ticks, so multi-tick moves (C3, C4, C6, the Surge
 // flurry) read as separate blows instead of a plateau.
 // Positional: pan + distance attenuation from the hero, relative to the sim camera yaw. Read-only on the sim; audio
 // randomness is Math.random, never the sim RNG. Starts on the first user gesture.
@@ -22,7 +22,7 @@ import { buildBank, makeIR, noiseBuf } from './bank.js';
 const rnd = (a, b) => a + (b - a) * Math.random();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Sim frames a swing cue precedes its hitbox window, per whoosh kind: the trail shows from f0-3 and each whoosh must be
-// audible 2-4 sf before it (benchmark). Bank whooshes fade in: audible ≈ 1.5 frames in for a thrust, ≈ 3.5 for a slash,
+// audible 2-4 sf before it (SENJIN timing target). Bank whooshes fade in: audible ≈ 1.5 frames in for a thrust, ≈ 3.5 for a slash,
 // ≈ 6 for a spin or a heavy swing (peaks ≈ 3 / 6.5 / 8-16 / 12 frames in). The kiai starts KIAI_LEAD frames ahead.
 // Cues that fall on the move's first frame fire from attack:start (no rAF lag).
 const LEAD = { thrust: 7, slash: 9, spin: 11, heavy: 12 }, KIAI_LEAD = 7;
@@ -39,18 +39,18 @@ const MIX = 0.66, POST = 0.9;     // master level (≈ -17 LUFS in the crowd-fig
 // loop gains: idle level, extra at full combat intensity (the mix breathes between fights; hits duck it via SIDE)
 const BED = [0.16, 0.4], DRUMS = [0.06, 0.7], MUSIC = [0.18, 0.46];
 // sidechain under every hit tick (hits own the transient): [whoosh, bed, voice, reverb return] depth, hold 50 ms + 10 ms
-// per extra victim, or up to the next tick of a multi-tick window (Musou flurry: 50 ms under each accented stab)
+// per extra victim, or up to the next tick of a multi-tick window (Surge flurry: 50 ms under each accented stab)
 const SIDE = [0.3, 0.5, 0.45, 0.5], SIDE_MU = [0.25, 0.4, 0.55, 0.4];
 
 export function createAudio(game) {
   let ctx = null, mix, post, ceiling, sfx, vox, bedBus, bedDuck, revIn, bedG, drumG, musicG, live = 0;
   let underBus, sides = [];                   // sfx that yield to impacts (whooshes, body falls) + the sidechain gains
                                               // (under bus, bed, voice, reverb return)
-  let muFrame = -1;                           // last sim frame that voiced a Musou tick (several strikes share a frame)
-  let mu = null;                              // current Musou timing (musou:start payload, frames)
+  let muFrame = -1;                           // last sim frame that voiced a Surge tick (several strikes share a frame)
+  let mu = null;                              // current Surge timing (surge:start payload, frames)
   let musicK = new URLSearchParams(location.search).get('music') === '0' ? 0 : 1;   // music=0 → battle bed + drums only
   let intensity = 0, lastT = performance.now(), drone = null, bedOn = false, nextShout = 0;
-  const lvl = { sfx: 1, vox: VOX };            // resting bus gains (the Musou dip returns to these)
+  const lvl = { sfx: 1, vox: VOX };            // resting bus gains (the Surge dip returns to these)
   const last = new Map();                     // throttles
   const lastPick = new Map();
   const B = {};                               // filled progressively by the offline bake (combat sounds first)
@@ -71,12 +71,12 @@ export function createAudio(game) {
     clip.curve = c; clip.oversample = '2x';
     mix = ctx.createGain(); mix.gain.value = MIX;
     post = ctx.createGain(); post.gain.value = POST;
-    // master EQ, matched to the benchmark clips' octave balance: less thump (63-125 Hz ran 2 dB hot), less 250 Hz mud,
+    // master EQ, matched to SENJIN's internal mix target: less thump (63-125 Hz ran 2 dB hot), less 250 Hz mud,
     // more 500 Hz body and 2-6 kHz bite (500 Hz-4 kHz ran 1.5-3 dB shy), a softer top above 12k
     const eq = [['lowshelf', 140, 0.7, -4], ['peaking', 260, 1, -1], ['peaking', 560, 0.9, 2.5], ['peaking', 3600, 0.7, 3.5], ['highshelf', 12000, 0.7, -3]].map(([type, f, q, g]) => {
       const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; b.gain.value = g; return b;
     });
-    ceiling = clip;                            // input after the compressor: the Musou riser rides through the inhale here
+    ceiling = clip;                            // input after the compressor: the Surge riser rides through the inhale here
     eq.reduce((n, b) => n.connect(b), mix).connect(comp).connect(post).connect(clip).connect(ctx.destination);
     sfx = ctx.createGain(); sfx.connect(mix);
     sides = SIDE.map(() => ctx.createGain());
@@ -91,8 +91,8 @@ export function createAudio(game) {
   }
   addEventListener('pointerdown', start);
   addEventListener('keydown', start);
-  // musou part r3: build the context + graph at boot (it stays 'suspended' until the first key/pointer gesture resumes
-  // it). Building it inside the first keydown stalled that frame 0.2-1 s (the first Musou of a session hitched when I
+  // surge part r3: build the context + graph at boot (it stays 'suspended' until the first key/pointer gesture resumes
+  // it). Building it inside the first keydown stalled that frame 0.2-1 s (the first Surge of a session hitched when I
   // was the first key pressed).
   start();
 
@@ -131,12 +131,12 @@ export function createAudio(game) {
   }
   /** Sidechain: whooshes, bed and voices dip within 4 ms of a hit tick, hold, then recover (tau 80 ms). A tick with more
    *  ticks to come in its window holds the dip up to the next one, so a whole C3 / C4 / C6 train stands on a hushed floor. */
-  function side(n, musou, until = 0) {
-    const t = ctx.currentTime, D = musou ? SIDE_MU : SIDE;
-    const hold = until || (musou ? 0.025 : Math.min(0.1, 0.05 + 0.01 * (n - 1)));
+  function side(n, surge, until = 0) {
+    const t = ctx.currentTime, D = surge ? SIDE_MU : SIDE;
+    const hold = until || (surge ? 0.025 : Math.min(0.1, 0.05 + 0.01 * (n - 1)));
     sides.forEach(({ gain: g }, i) => {
       g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(D[i], t + 0.004);
-      g.setValueAtTime(D[i], t + 0.004 + hold); g.setTargetAtTime(1, t + 0.004 + hold, musou ? 0.05 : 0.08);
+      g.setValueAtTime(D[i], t + 0.004 + hold); g.setTargetAtTime(1, t + 0.004 + hold, surge ? 0.05 : 0.08);
     });
   }
   function duck(depth, hold, rel = 0.18) {
@@ -186,7 +186,7 @@ export function createAudio(game) {
     const now = performance.now(), dt = Math.min(0.1, (now - lastT) / 1000);
     lastT = now;
     if (!ok()) return;
-    musouFrame();
+    surgeFrame();
     const h = game.hero, m = h.state === 'attack' && h.move && MOVES[h.move];
     if (m) {
       if (h.moveSeq !== seq) { seq = h.moveSeq; seenT = -1; }   // missed attack:start (should not happen)
@@ -217,11 +217,11 @@ export function createAudio(game) {
   on('hits', (e) => {
     if (!ok()) return;
     const n = e.count, { pan, att } = place(e.x, e.z);
-    intensity += e.move === 'musou' ? n * 0.15 : n;   // the field a Musou clears goes quiet after it (no bed swell)
-    if (e.move === 'musou') {                   // flurry: every tick frame is voiced — an accented stab ≥ 70 ms apart
+    intensity += e.move === 'surge' ? n * 0.15 : n;   // the field a Surge clears goes quiet after it (no bed swell)
+    if (e.move === 'surge') {                   // flurry: every tick frame is voiced — an accented stab ≥ 70 ms apart
       if (game.frame === muFrame) return;       // (≈ 14/s) on a dipped floor, a short sharp strike on the ticks between
       muFrame = game.frame;
-      const u = mu ? clamp((game.musou.t - mu.C) / (mu.F - mu.C), 0, 1) : 1, cr = 0.7 + 0.45 * u;   // builds to the burst
+      const u = mu ? clamp((game.surge.t - mu.C) / (mu.F - mu.C), 0, 1) : 1, cr = 0.7 + 0.45 * u;   // builds to the burst
       if (!gate('muHit', 70)) {
         play(pick(B.hit), { gain: rnd(0.4, 0.5) * cr, rate: rnd(1.25, 1.5), pan: pan * 0.6 + rnd(-0.3, 0.3), send: 0.03 });
         return;
@@ -254,7 +254,7 @@ export function createAudio(game) {
     for (let j = 0; j < g; j++) play(pick(B.crunch), { gain: rnd(0.25, 0.4), rate: rnd(0.8, 1.25), pan: pan + rnd(-0.45, 0.45), delay: 0.004 + j * rnd(0.003, 0.005), send: 0.06 });
   });
   on('hit', (e) => {
-    if (!ok() || e.killed || e.move === 'musou' || Math.random() > 0.3 || !gate('grunt', 180)) return;
+    if (!ok() || e.killed || e.move === 'surge' || Math.random() > 0.3 || !gate('grunt', 180)) return;
     const { pan, att } = place(e.x, e.z);
     play(pick(B.grunt), { gain: 0.3 * att, rate: rnd(0.9, 1.1), pan, delay: rnd(0.02, 0.06), send: 0.15, bus: vox });
   });
@@ -292,9 +292,9 @@ export function createAudio(game) {
     if (e.officer || Math.random() < 0.25) play(pick(B.grunt), { gain: 0.25 * att, rate: rnd(1.05, 1.2), pan, bus: vox, send: 0.15 });
   });
 
-  // ---- Musou
-  on('musou:ready', () => ok() && play(B.ready, { gain: 0.5, send: 0.3, prio: 1 }));
-  function undip() {                           // restore the mix and the sfx / voice buses after the Musou
+  // ---- Surge
+  on('surge:ready', () => ok() && play(B.ready, { gain: 0.5, send: 0.3, prio: 1 }));
+  function undip() {                           // restore the mix and the sfx / voice buses after the Surge
     const t = ctx.currentTime;
     for (const [bus, v] of [[sfx, lvl.sfx], [vox, lvl.vox], [post, POST]]) { const g = bus.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(v, t + 0.004); }
   }
@@ -305,7 +305,7 @@ export function createAudio(game) {
     for (const n of drone) try { n.stop(t + fade); } catch { /* not started */ }
     drone = null;
   }
-  // Shape (DW8XL ground Musou): flash + shout → hushed close-up (bed and buses dip, low drone) → drone + riser swell over
+  // Shape (SENJIN ground Surge): flash + shout → hushed close-up (bed and buses dip, low drone) → drone + riser swell over
   // the chase run → CONTACT impact restores the mix → stab flurry → short inhale (triggered by the flurry's own ticks,
   // so sim lag can't misplace it) → burst.
   function ramp(g, pts) {                      // [[dt, v], ...] linear segments from now
@@ -313,14 +313,14 @@ export function createAudio(game) {
     g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
     for (const [dt, v] of pts) g.linearRampToValueAtTime(v, t + dt);
   }
-  on('musou:start', (e) => {
+  on('surge:start', (e) => {
     if (!ok()) return;
     mu = { A: e.activation, C: e.contact, F: e.burstAt, inhaled: false, hushed: false, spins: 0, g: null };
     play(B.flash, { gain: 0.8, send: 0.4, prio: 1 });
-    play(B.musouKiai, { gain: 1.0, delay: 0.06, bus: vox, send: 0.3, prio: 1 });
+    play(B.surgeKiai, { gain: 1.0, delay: 0.06, bus: vox, send: 0.3, prio: 1 });
     ramp(bedDuck.gain, [[0.02, 0.3]]);          // bed deep under the activation (the close-up hush takes it lower)
     // charge drone: detuned saws through an opening lowpass with a tremolo, plus a noise riser into the contact. Its
-    // levels follow the sim's Musou clock every frame (musouFrame), so a slow real-time sim can't misplace the swell.
+    // levels follow the sim's Surge clock every frame (surgeFrame), so a slow real-time sim can't misplace the swell.
     stopDrone();
     const t = ctx.currentTime, g = ctx.createGain(), lp = ctx.createBiquadFilter(), trem = ctx.createGain();
     g.gain.value = 0; lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.value = 200; trem.gain.value = 0.7;
@@ -336,9 +336,9 @@ export function createAudio(game) {
     drone = [...nodes, lfo, rn];
     mu.g = { g: g.gain, lp: lp.frequency, lfo: lfo.frequency, rg: rg.gain, rbp: rbp.frequency };
   });
-  /** Per-frame Musou shaping from the sim's Musou clock (read-only): close-up hush, charge swell, finisher wind-up. */
-  function musouFrame() {
-    const M = game.musou;
+  /** Per-frame Surge shaping from the sim's Surge clock (read-only): close-up hush, charge swell, finisher wind-up. */
+  function surgeFrame() {
+    const M = game.surge;
     if (!mu || !M.active) return;
     const t = M.t, now = ctx.currentTime, set = (p, v, tau = 0.03) => p.setTargetAtTime(v, now, tau);
     if (!mu.hushed && t >= mu.A) {             // close-up: the world is paused — bed near silent, buses dip, drone hums
@@ -358,7 +358,7 @@ export function createAudio(game) {
       if (mu.spins === k && t >= mu.F - df) { mu.spins++; play(pick(B.spin), { gain: gv, rate: rnd(0.88, 0.96), send: 0.25, bus: underBus, prio: 1 }); }
     }
   }
-  on('musou:hit', (e) => {
+  on('surge:hit', (e) => {
     if (!ok()) return;
     if (e.stage === 'contact') {               // first mass hit: the mix comes back with a blast
       stopDrone(0.06);
@@ -376,7 +376,7 @@ export function createAudio(game) {
     }
     if (B.kiai && e.stage === 'rush' && gate('muKiai', 280)) play(pick(B.kiai[Math.random() < 0.5 ? 'ha' : 'tah']), { gain: 0.55, rate: rnd(1.0, 1.08), bus: vox, send: 0.2 });
   });
-  on('musou:burst', (e) => {
+  on('surge:burst', (e) => {
     if (!ok()) return;
     stopDrone(); undip();
     play(B.boom, { gain: 1.2, send: 0.45, prio: 1 });

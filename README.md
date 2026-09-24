@@ -1,84 +1,58 @@
 **English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
-# Voxel Musou — Zhao Yun (趙雲)
+# SENJIN — 先陣
 
-<p align="center">
-  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="Zhao Yun vs 300 soldiers — the Musou" width="100%"></a>
-</p>
+SENJIN is a browser-playable voxel battlefield action prototype built with Three.js. Take the role of a lone vanguard fighter, break through dense enemy formations, defeat officers, and build the Surge gauge for a cinematic crowd-clearing special.
 
-<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ Play in your browser — voxel-musou.vercel.app</a></b></p>
-
-| | |
-| --- | --- |
-| ![Crowd fight, 400+ hit chain](media/crowd.jpg) | ![Charge sweep](media/sweep.jpg) |
-| Crowd fight, 400+ hit chain | Charge sweep |
-| ![Musou cut-in](media/musou.jpg) | ![Musou dragon, 150 K.O.](media/dragon.jpg) |
-| Musou cut-in | Musou dragon, 150 K.O. |
-
-A browser-playable voxel action game in the style of Dynasty Warriors, built with Three.js. Take the field as Zhao Yun and cut through hundreds of Wei soldiers with his spear.
-
-No build step: plain ES modules, Three.js r186 vendored in `vendor/three/`, deterministic fixed 60 Hz simulation.
+The project uses an original fictional battlefield presentation. It does not use characters, names, artwork, audio, logos, story material, or other game assets from third-party commercial game franchises.
 
 ## Features
 
-- Flowing normal combos (N1–N6) and charge attacks (C1–C6)
-- Jump, jump attack and dodge
-- Hit-stop and impact VFX
-- Dense voxel crowds of Wei soldiers (~300, InstancedMesh) blasted apart into voxel debris
-- Enemy officers with name and HP tags
-- Musou special attack with a dragon and screen color grade
-- Golden-hour castle battlefield with fires and banners
-- Custom post-processing: atmospheric haze, depth of field, bloom, retro pixel look
-- Procedural WebAudio sound
-- Calligraphy-style HUD
+- Fast polearm combat with normal strings, charge attacks, jump attacks, and dodge
+- Dense voxel crowds with hundreds of enemies using `InstancedMesh`
+- Enemy officers with health bars
+- Surge gauge and cinematic Surge special
+- Procedural battlefield, castle structures, fires, banners, and VFX
+- Procedural WebAudio sound bank; no downloaded game audio
+- Deterministic fixed 60 Hz simulation
+- No build step: plain ES modules with Three.js r186 vendored in `vendor/three/`
 
 ## Run
-
-ES modules don't load from `file://`, so serve the folder with any static server:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000 . Requires a WebGL2 browser; a desktop GPU is recommended. Sound starts on the first key press or click.
+Open `http://localhost:8000`. A WebGL2-capable browser is required.
 
 ## Controls
 
-Keyboard and mouse; a gamepad is optional.
-
 | Action | Keys |
 | --- | --- |
-| Move (camera-relative) | WASD / arrow keys |
+| Move | WASD / arrow keys |
 | Normal attack | J / left mouse |
 | Charge attack | K / right mouse |
 | Jump | Space |
 | Dodge | L / Shift |
-| Musou | I |
+| Surge | I |
 | Camera orbit | mouse drag / Q E |
 | Pause / controls | Esc |
-| Start | Enter / click 出陣 |
-
-![Title screen with the full controls](media/title.jpg)
-
-## Options
-
-| URL parameter | Description |
-| --- | --- |
-| `?enemies=N` | Number of enemy soldiers, 0–2000 (default 300) |
+| Start | Enter / click start |
 
 ## Project layout
 
 ```
-index.html      entry point, importmap, HUD CSS
-src/            core, hero, combat, crowd, musou, camera, vfx, post, world, audio, ui
+index.html      entry point, import map, HUD CSS
+src/            simulation, hero, combat, crowd, surge, camera, VFX, world, audio, UI
 vendor/three/   Three.js r186
-media/          README screenshots and GIF
+LICENSES/       third-party license texts
 ```
 
-## Credits & License
+## Licensing
 
-- Code: MIT, see [LICENSE](LICENSE).
-- [three.js](https://threejs.org/): MIT.
-- HUD fallback font `src/ui/brush.woff2` is a subset of Yuji Boku by Kinuta Font Factory, licensed under the SIL Open Font License 1.1.
+- Original project code: MIT, see [LICENSE](LICENSE).
+- Three.js: MIT; see [LICENSES/three.js-MIT.txt](LICENSES/three.js-MIT.txt).
+- `src/ui/brush.woff2`: Yuji Boku subset, SIL Open Font License 1.1; see [LICENSES/Yuji-Boku-OFL-1.1.txt](LICENSES/Yuji-Boku-OFL-1.1.txt).
+- Additional attribution details: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-This is a fan project, not affiliated with or endorsed by KOEI TECMO. "Dynasty Warriors" is a trademark of KOEI TECMO. No game assets from the original games are included.
+The original MIT copyright notice is retained as required by the license.

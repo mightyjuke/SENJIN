@@ -1,6 +1,6 @@
 // Offline-synthesised sound bank (OfflineAudioContext, no downloads). Everything is baked once at boot into AudioBuffers
-// — formant-synth voices (Zhao Yun kiai, enemy grunts / death cries, distant army), layered spear whooshes, slash
-// impacts, armour clanks, body falls, Musou stingers, a looping battle bed, a war-drum loop and a power-chord riff loop
+// — formant-synth voices (the vanguard kiai, enemy grunts / death cries, distant army), layered spear whooshes, slash
+// impacts, armour clanks, body falls, Surge stingers, a looping battle bed, a war-drum loop and a power-chord riff loop
 // (bake ≈ 0.9 s at boot; combat sounds are ready after ≈ 0.1 s) — and played back by
 // audio.js with random rate / gain / pan, so 50+ hits per second stay cheap and never repeat back to back.
 // Audio variation uses Math.random: it must never touch the sim or visual RNG.
@@ -159,7 +159,7 @@ function voice(oc, dst, o) {
   return end;
 }
 
-// Zhao Yun's kiai lines (seconds from the cue; the vowel peak lands ≈ 50-70 ms in, on the first trail frame)
+// the vanguard's kiai lines (seconds from the cue; the vowel peak lands ≈ 50-70 ms in, on the first trail frame)
 const LINES = {
   ha: { f0: [[0, 220], [0.06, 268], [0.14, 250], [0.24, 185]], vow: [[0, 'A'], [0.07, 'a'], [0.24, 'a']],
     amp: [[0, 0], [0.035, 0.08], [0.065, 1], [0.15, 0.75], [0.25, 0]], asp: [[0, 0], [0.012, 0.9], [0.05, 0.5], [0.085, 0]], growl: 0.15 },
@@ -182,7 +182,7 @@ const LINES = {
     amp: [[0, 0], [0.04, 0.12], [0.08, 1], [0.45, 0.85], [0.63, 0]], asp: [[0, 0], [0.012, 0.9], [0.06, 0.4], [0.1, 0]], growl: 0.3 },
 };
 const HERO_EXTRA = {
-  musou: { f0: [[0, 205], [0.12, 262], [0.6, 300], [0.95, 338], [1.2, 250]], vow: [[0, 'A'], [0.12, 'a'], [1.2, 'a']],
+  surge: { f0: [[0, 205], [0.12, 262], [0.6, 300], [0.95, 338], [1.2, 250]], vow: [[0, 'A'], [0.12, 'a'], [1.2, 'a']],
     amp: [[0, 0], [0.05, 0.15], [0.14, 0.9], [0.8, 1], [1.05, 0.8], [1.22, 0]], asp: [[0, 0], [0.015, 0.9], [0.08, 0.4], [0.14, 0]], growl: 0.4 },
   hurt: { f0: [[0, 205], [0.04, 215], [0.2, 140]], vow: [[0, 'A'], [0.1, 'u']], amp: [[0, 0], [0.018, 1], [0.1, 0.6], [0.21, 0]],
     fric: [0, 0.018, 0.9, 1400], growl: 0.45 },
@@ -384,8 +384,8 @@ export async function buildBank(B = {}) {
     })),
   ]);
   const hx = HERO_EXTRA;
-  await put(['hurt', 'hup', 'musouKiai', 'land'], [
-    n(3, () => vox(hx.hurt, rnd(0.95, 1.05))), n(2, () => vox(hx.hup, rnd(0.97, 1.03))), vox(hx.musou, 1),
+  await put(['hurt', 'hup', 'surgeKiai', 'land'], [
+    n(3, () => vox(hx.hurt, rnd(0.95, 1.05))), n(2, () => vox(hx.hup, rnd(0.97, 1.03))), vox(hx.surge, 1),
     n(2, () => bake(0.4, (oc, d) => { fall(oc, d, true); })),
   ]);
   // stingers

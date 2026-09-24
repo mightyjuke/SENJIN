@@ -1,0 +1,62 @@
+name: Validate SENJIN
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done < <(find src -type f -name '*.js' -print0)
+
+      - name: Check local module imports
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+          bad = []
+          pat = re.compile(r"(?:from\s+)?['\"](\.{1,2}/[^'\"]+)['\"]")
+          for p in Path("src").rglob("*.js"):
+              text = p.read_text(encoding="utf-8")
+              for spec in pat.findall(text):
+                  target = (p.parent / spec).resolve()
+                  if not target.exists():
+                      bad.append(f"{p}: missing {spec}")
+          if bad:
+              print("\n".join(bad))
+              sys.exit(1)
+          PY
+
+      - name: Smoke-test static entry points
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8000 >/tmp/senjin-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          curl -fsS http://127.0.0.1:8000/ >/dev/null
+          curl -fsS http://127.0.0.1:8000/src/main.js >/dev/null
+          curl -fsS http://127.0.0.1:8000/src/surge/surge.js >/dev/null
+          curl -fsS http://127.0.0.1:8000/src/surge/view.js >/dev/null
+
+      - name: Ensure legacy franchise references are absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='Dynasty Warriors|KOEI|DW8|DW9|Zhao Yun|趙雲|赵云|Musou|musou|MUSOU|無雙|無双|无双'
+          if grep -RniE "$pattern" README*.md index.html src THIRD_PARTY_NOTICES.md; then
+            echo "Legacy franchise/reference terms found."
+            exit 1
+          fi

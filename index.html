@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<title>趙雲 — Voxel Musou</title>
+<title>SENJIN — 先陣</title>
 <script type="importmap">
 { "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
 </script>
@@ -12,7 +12,7 @@
   html, body { margin: 0; height: 100%; background: #1a120d; overflow: hidden; }
   canvas#c { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
 
-  /* ---- HUD (owned by the hud part). DW8 layout, concept calligraphy. 1rem = 1/72 viewport height (10 px @720p). ---- */
+  /* ---- HUD (owned by the hud part). SENJIN layout, concept calligraphy. 1rem = 1/72 viewport height (10 px @720p). ---- */
   html { font-size: calc(100vh / 72); }
   /* Portable brush fallback for machines without the macOS Xingkai/Kaiti assets: Yuji Boku (SIL OFL 1.1, Kinuta Font
      Factory), subset to the HUD's glyphs (src/ui/brush.woff2). Only fetched when the fonts before it are missing.
@@ -20,7 +20,7 @@
   @font-face { font-family: "HudBrush"; src: url(./src/ui/brush.woff2) format("woff2"); font-display: swap; }
   #hud { position: fixed; inset: 0; pointer-events: none; color: #f4ead8; user-select: none; overflow: hidden;
     --brush: "Xingkai SC", "STXingkai", "HudBrush", serif; --kai: "Kaiti SC", "STKaiti", "KaiTi", "HudBrush", serif;
-    --sans: "Avenir Next", "Helvetica Neue", sans-serif; --gold: #f2c14e; --teal: #3fb8b0; --seal: #b3261e;
+    --sans: "Avenir Next", "Helvetica Neue", sans-serif; --gold: #c6a15b; --teal: #bd3f32; --seal: #5b1d19;
     font-family: var(--kai); text-shadow: 0 .2rem .3rem rgba(0,0,0,.7); }
   #hud > * { position: absolute; }
   #hud .seal { display: inline-block; font: 700 1.3rem/1.05 var(--brush); font-style: normal; color: #f8e6d2; background: var(--seal);
@@ -42,25 +42,25 @@
   #hud kbd { font: 600 1.05rem/1 var(--sans); padding: .2rem .45rem; border: .1rem solid rgba(239,227,207,.55); border-radius: .3rem;
     background: rgba(0,0,0,.4); margin-right: .15rem; }
 
-  /* player: pixel portrait badge, brush name, long teal HP bar, 3-segment musou gauge (DW8 bottom band) */
-  #hud .h-player { left: 0; right: 0; bottom: 0; height: 20rem; }
-  #hud .badge { position: absolute; left: 3.4rem; bottom: 4.2rem; width: 11rem; height: 11rem; border-radius: 50%; overflow: hidden;
-    background: radial-gradient(circle at 50% 38%, #3c6f72, #16262a 70%); border: .35rem solid #d9d2c6;
+  /* player status: compact bottom-left SENJIN panel with portrait, health and segmented Surge gauge */
+  #hud .h-player { left: 2.6rem; width: 44rem; bottom: 2.4rem; top: auto; height: 10.5rem; }
+  #hud .badge { position: absolute; left: 0; bottom: .5rem; width: 8.5rem; height: 8.5rem; border-radius: 18%; overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #5a2524, #211719 72%); border: .28rem solid #d9d2c6;
     box-shadow: 0 0 0 .2rem #1a1210, 0 0 0 .38rem #b8893a, 0 .4rem 1rem rgba(0,0,0,.6); }
-  #hud .badge canvas { position: absolute; left: 1.1rem; bottom: -.3rem; width: 8.8rem; height: 8.8rem; image-rendering: pixelated; }
+  #hud .badge canvas { position: absolute; left: .7rem; bottom: -.2rem; width: 7.2rem; height: 7.2rem; image-rendering: pixelated; }
   #hud .h-player.hurt .badge { border-color: #ff6a4a; }
   #hud .h-player.low .badge { box-shadow: 0 0 0 .2rem #1a1210, 0 0 0 .38rem #d23a24, 0 0 1.6rem rgba(230,60,30,.7); }
-  #hud .name { position: absolute; left: 13.4rem; bottom: 7.9rem; font: 700 3.8rem/1 var(--brush); color: #f7f1e8;
+  #hud .name { position: absolute; left: 10rem; bottom: 6.5rem; font: 700 3.1rem/1 var(--brush); color: #f7f1e8;
     text-shadow: 0 0 .1rem #000, .2rem .3rem 0 rgba(0,0,0,.55); }
-  #hud .hp { position: absolute; left: 16%; right: 22%; bottom: 6.8rem; height: 1.4rem;
+  #hud .hp { position: absolute; left: 10rem; right: 2.5rem; bottom: 4.8rem; height: 1.2rem;
     clip-path: polygon(0 0, 100% 0, calc(100% - 1rem) 100%, 0 100%); }
   #hud .hp { background: linear-gradient(rgba(58,46,38,.88), rgba(20,15,12,.88)); }   /* empty track: readable length */
   #hud .hp::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 .12rem rgba(214,184,130,.6); }
   #hud .hp em { opacity: .8; background: repeating-linear-gradient(90deg, rgba(0,0,0,.2) 0 .2rem, transparent .2rem .6rem),
     linear-gradient(#ffe6c0, #d8a060); }                                                  /* damage chunk (lags, then drains) */
-  #hud .hp i { background: linear-gradient(#aef3e6 0 18%, #3fc2b4 30%, #1f8a82 85%, #146058); }
+  #hud .hp i { background: linear-gradient(#ffd2c8 0 18%, #cf5748 30%, #8f2d28 85%, #531b19); }
   #hud .h-player.low .hp i { background: linear-gradient(#ffb09a 0 18%, #e2402a 30%, #9a1c10 85%); }
-  #hud .mu { position: absolute; left: 15%; width: 30%; bottom: 4.7rem; height: 1.3rem; display: flex; gap: .4rem; --p: 0; }
+  #hud .mu { position: absolute; left: 10rem; width: 23rem; bottom: 2.6rem; height: 1.1rem; display: flex; gap: .45rem; --p: 0; }
   #hud .mu div { position: relative; flex: 1; background: rgba(10,7,6,.75); box-shadow: 0 0 0 .1rem #6b4a1c, 0 0 0 .2rem rgba(0,0,0,.6);
     transform: skewX(-24deg); }
   #hud .mu i { position: absolute; inset: .15rem; transform-origin: 0 50%;
@@ -73,8 +73,8 @@
   #hud .mu.active i { background: linear-gradient(#ffffff, #bfe8ff 45%, #4aa2ff); }
   #hud .mu.active span { color: #d8f2ff; text-shadow: 0 0 1rem #58b2ff; }
 
-  /* Heavy numerals (KO, chain, milestone): DW8's weight in brush calligraphy. <b class="dig" data-t="N"><span>N</span></b>:
-     ::before is a dark rim + halo (thick stroke, drop shadows) so digits read over white musou flashes and dark crowds;
+  /* Heavy numerals (KO, chain, milestone): SENJIN's weight in brush calligraphy. <b class="dig" data-t="N"><span>N</span></b>:
+     ::before is a dark rim + halo (thick stroke, drop shadows) so digits read over white surge flashes and dark crowds;
      the span is a bevelled vertical gradient, fattened by an edge stroke in the mid tone. */
   #hud .dig { position: relative; isolation: isolate; padding: 0 .12em; --rw: .6rem; --ew: .16rem;
     --hi: #fffbe0; --mid: #ffd865; --lo: #b8680e; --rim: #2a1204; --edge: #f2b440; }
@@ -96,13 +96,13 @@
   #hud .h-ko small { color: #ffe0a0; margin-top: -.4rem; }
   #hud .h-chain { left: 11%; top: 45%; }
   #hud .h-chain b { transform-origin: 0 85%; --hi: #f4feff; --mid: #9aeaff; --lo: #1d78c0; --rim: #041a2e; --edge: #5cc8f4; }
-  /* chain ghosts (pool of 3, one per tick): pale cyan digit with a DW8 motion smear trailing up-right, where it came from */
+  /* chain ghosts (pool of 3, one per tick): pale cyan digit with a SENJIN motion smear trailing up-right, where it came from */
   #hud .h-chain u { transform-origin: 0 100%; color: #f4feff; -webkit-text-stroke: .22rem #3aa6f0; padding: 0 .12em;
     text-shadow: .12em -.1em 0 rgba(130,220,255,.55), .24em -.2em 0 rgba(110,205,255,.3), .36em -.3em .1rem rgba(90,190,255,.14),
       0 0 1.2rem rgba(90,200,255,.9); }
   #hud .h-chain small { color: #bfeeff; margin: -.3rem 0 0 .3rem; }
 
-  /* KO milestone: centre, heavy gold brush number (digits ~13 % H like DW8) + red 擊破 seal stamp */
+  /* KO milestone: centre, heavy gold brush number (digits ~13 % H like SENJIN) + red 擊破 seal stamp */
   #hud .h-mile { left: 0; right: 0; top: 33%; text-align: center; opacity: 0; }
   #hud .h-mile b { display: inline-block; font: 700 15rem/1 var(--brush); --rw: 1rem; --ew: .3rem; --hi: #fffdf0; --mid: #ffdc6a;
     vertical-align: middle; }
@@ -124,13 +124,13 @@
   #hud .h-dlg p { margin: .4rem 0 .35rem; font: 700 2.3rem/1.1 var(--kai); letter-spacing: .12rem; white-space: nowrap; }
   #hud .h-dlg small { font-weight: 600; letter-spacing: .06em; font-size: 1.6rem; white-space: nowrap; color: #f4ead8; }
 
-  /* musou: concept's vertical copy on the right */
+  /* surge: concept's vertical copy on the right */
   #hud .h-copy { right: 3.2%; top: 44%; writing-mode: vertical-rl; font: 700 3.4rem/1.3 var(--brush); letter-spacing: .5rem; opacity: 0;
     color: #f7f1e8; text-shadow: 0 0 .1rem #000, .2rem .3rem 0 rgba(0,0,0,.55), 0 0 1.4rem rgba(120,200,255,.5);
     border-top: .15rem solid rgba(247,241,232,.7); border-bottom: .15rem solid rgba(247,241,232,.7); padding: 1rem 0; }
 
   /* officer target bar (top left) + floating officer tags */
-  #hud .h-target { left: 2.6rem; top: 2.2rem; width: 36%; opacity: 0; }
+  #hud .h-target { left: 34%; top: 2.2rem; width: 32%; opacity: 0; }
   #hud .h-target .seal { font-size: 1.6rem; vertical-align: .6rem; margin-right: .6rem; writing-mode: horizontal-tb; padding: .25rem .3rem; }
   #hud .h-target b { font: 700 2.8rem/1 var(--brush); color: #ffe3b0; }
   #hud .h-target span { font: 600 1rem/1 var(--sans); letter-spacing: .35em; margin-left: .8rem; opacity: .85; }
@@ -155,7 +155,7 @@
   #hud .off .ld { position: absolute; left: -.07rem; bottom: 0; width: .14rem; height: 1px; transform-origin: 50% 100%;
     background: rgba(255,217,168,.75); box-shadow: 0 0 .15rem rgba(0,0,0,.8); }
 
-  /* minimap: square battlefield map + 蜀/魏 morale bar (top right) */
+  /* minimap: square battlefield map + 盟/敵 morale bar (top right) */
   #hud .h-map { right: 2.4%; top: 4.2rem; width: 20rem; }
   #hud .h-map canvas { display: block; width: 20rem; height: 20rem; box-shadow: 0 0 0 .1rem rgba(214,184,130,.75), 0 0 0 .25rem rgba(0,0,0,.45), 0 .4rem 1rem rgba(0,0,0,.4); }
   #hud .morale { position: relative; height: .5rem; margin: 0 0 .7rem; background: #c0392b; box-shadow: 0 0 0 .1rem rgba(0,0,0,.6); }
@@ -195,16 +195,16 @@
 <canvas id="c"></canvas>
 <div id="hud"></div>
 <div id="menu">
-  <div class="t">趙雲<i>常山</i></div>
-  <div class="en">VOXEL MUSOU</div>
-  <div class="sub">一杆長槍，獨闖魏軍三百</div>
+  <div class="t">先陣<i>烈風</i></div>
+  <div class="en">SENJIN</div>
+  <div class="sub">孤身破陣，迎戰百軍</div>
   <table>
     <tr><td>移動<small>MOVE</small></td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows</td></tr>
     <tr><td>攻擊<small>ATTACK</small></td><td><kbd>J</kbd> / left click — tap for a 6-hit combo</td></tr>
     <tr><td>蓄力<small>CHARGE</small></td><td><kbd>K</kbd> / right click — mid-combo for charge attacks</td></tr>
     <tr><td>跳躍<small>JUMP</small></td><td><kbd>Space</kbd></td></tr>
     <tr><td>閃避<small>DODGE</small></td><td><kbd>L</kbd> / <kbd>Shift</kbd></td></tr>
-    <tr><td>無雙<small>MUSOU</small></td><td><kbd>I</kbd> — when the gold gauge is full</td></tr>
+    <tr><td>破陣<small>SURGE</small></td><td><kbd>I</kbd> — when the gold gauge is full</td></tr>
     <tr><td>視角<small>CAMERA</small></td><td><kbd>Q</kbd><kbd>E</kbd> / drag the mouse</td></tr>
   </table>
   <button id="go">出陣<small>START</small></button>

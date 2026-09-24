@@ -1,17 +1,10 @@
-// Musou presentation (render-only; reads game.musou / hero state, never writes sim state):
-//  · grade (display space, DOM layers between the canvas and the HUD, so ACES can't swallow them): 1–2 frame flash, a
-//    cold teal-night dim that lifts during the chase run, a screen-blended teal-white burst at contact and at the
-//    finisher (1–2 frame peak, no hold, so the launched bodies keep their contrast); radial light rays at
-//    contact as an additive HDR quad (bloom + retro dither like everything else), depth-tested behind the contact point;
-//    a brief teal fill light on the camera side of the fan; the cool tint bridges the dark intro into the contact and is
-//    gone within 0.5 s, so the payoff plays at the normal golden-hour contrast.
-//  · floating light motes (streak during the chase), rising energy ribbons, electric aura in the close-up
-//  · the voxel azure dragon (path shared with the sim hits: dragonAt), shedding light-voxel shards, dissolving at the end
-//  · finisher lightning ring band (DW9 ring wave), calligraphy cut-in (無雙 + seal) over the close-up (DOM, frame-driven)
+// SENJIN Surge presentation (render-only). The effect is an abstract segmented energy storm,
+// with original crimson/gold treatment, contact shards, radial finisher and a minimal calligraphy cut-in.
+// It intentionally avoids character-, creature- and franchise-specific visual motifs.
 import * as THREE from 'three';
 import { on } from '../core/events.js';
 import { vrng, hash01 } from '../core/rng.js';
-import { MUSOU, dragonAt, dragonArc } from './musou.js';
+import { SURGE, stormAt, stormArc } from './surge.js';
 
 const _m = new THREE.Matrix4(), _l = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
 const _x = new THREE.Vector3(), _y = new THREE.Vector3(), _z = new THREE.Vector3(), _v = new THREE.Vector3(), _c = new THREE.Color();
@@ -50,51 +43,41 @@ function instanced(scene, geo, mat, n) {
   return m;
 }
 
-// ---------------------------------------------------------------- dragon layout
-const NS = 46, SP = 0.3, NECK = 1.1, GIRTH = 1.4;        // body segments, spacing (m), head→first segment gap, body scale
-// (r2: girth ×1.4 and a bigger head — from the flank payoff camera the dragon runs 8–14 m away and read as a thin ribbon)
+// ---------------------------------------------------------------- abstract storm-ribbon layout
+const NS = 46, SP = 0.3, NECK = 0.55, GIRTH = 1.0;
 const COL = {
-  // azure 青龍: saturated enough that ACES keeps the hue; only fins/belly/whiskers/eyes run hot enough to bloom
-  // (r2: fins/belly/white a notch lower — the post's cool-biased bloom turned the finisher coil into a white column)
-  body: [0.03, 0.2, 0.75], scale: [0.06, 0.38, 1.05], belly: [0.4, 0.72, 0.92], fin: [0.42, 0.95, 1.3], eye: [3.0, 2.2, 0.5],
-  horn: [1.4, 1.15, 0.6], white: [1.0, 1.12, 1.2], whisker: [0.6, 1.15, 1.55],
+  body: [0.48, 0.05, 0.035],
+  scale: [0.92, 0.16, 0.07],
+  belly: [0.95, 0.42, 0.08],
+  fin: [1.25, 0.72, 0.16],
+  eye: [1.35, 0.9, 0.2],
+  horn: [0.9, 0.35, 0.08],
+  white: [1.2, 0.9, 0.55],
+  whisker: [1.1, 0.5, 0.12],
 };
-function dragonParts() {
-  const parts = [];            // { seg (-1 head), off, size, dir?, col, dyn? }
+function stormParts() {
+  const parts = [];
   const add = (seg, off, size, col, dir, dyn) => parts.push({ seg, off, size, col, dir, dyn });
+  // Leading angular core: deliberately abstract, with no face, horns, limbs or animal anatomy.
+  add(-1, [0, 0, 0], [0.42, 0.42, 0.7], COL.fin);
+  add(-1, [0.24, 0, -0.08], [0.13, 0.13, 0.5], COL.white, [0.6, 0, -1]);
+  add(-1, [-0.24, 0, -0.08], [0.13, 0.13, 0.5], COL.white, [-0.6, 0, -1]);
   for (let k = 0; k < NS; k++) {
-    const u = k / (NS - 1), w = GIRTH * (k < 4 ? 0.52 + k * 0.05 : 0.14 + 0.58 * Math.pow(1 - (k - 4) / (NS - 4), 0.75));
-    add(k, [0, 0, 0], [w, w * 0.86, SP * 1.4], k % 2 ? COL.scale : COL.body);
-    add(k, [0, -w * 0.42, 0], [w * 0.72, w * 0.26, SP * 1.25], COL.belly);
-    if (u < 0.93) add(k, [0, w * 0.52, -SP * 0.1], [w * 0.16, w * (k % 2 ? 0.42 : 0.72), SP * 0.6], COL.fin, [0, 0.5, -1]);
-    if (k === 5 || k === 21) for (const sx of [1, -1]) {                           // legs with claws
-      add(k, [sx * w * 0.62, -w * 0.3, 0], [0.18, 0.18, 0.62], COL.body, [sx * 0.7, -0.8, -0.5]);
-      add(k, [sx * w * 0.95, -w * 0.72, -0.12], [0.34, 0.1, 0.28], COL.white);
+    const u = k / (NS - 1);
+    const w = GIRTH * (0.16 + 0.5 * Math.pow(1 - u, 0.8));
+    add(k, [0, 0, 0], [w, w * 0.56, SP * 1.35], k % 2 ? COL.scale : COL.body);
+    add(k, [0, w * 0.42, -SP * 0.05], [w * 0.14, w * 0.5, SP * 0.5], COL.fin, [0, 0.7, -1]);
+    if (k % 4 === 0) {
+      add(k, [w * 0.56, 0, 0], [w * 0.16, w * 0.16, SP * 0.8], COL.white, [0.8, 0.1, -1]);
+      add(k, [-w * 0.56, 0, 0], [w * 0.16, w * 0.16, SP * 0.8], COL.white, [-0.8, 0.1, -1]);
     }
   }
-  for (const [x, dy] of [[0, 0.3], [0.12, 0.12], [-0.12, 0.12]]) add(NS - 1, [x, dy, -0.25], [0.05, 0.42, 0.34], COL.fin, [x * 3, 1, -1.2]);
-  const H = -1;
-  add(H, [0, 0.05, 0], [0.64, 0.52, 0.64], COL.scale);
-  add(H, [0, 0.31, 0.12], [0.68, 0.12, 0.32], COL.fin);
-  add(H, [0, -0.02, 0.56], [0.46, 0.3, 0.62], COL.body);
-  add(H, [0, 0.09, 0.88], [0.3, 0.14, 0.12], COL.white);
-  add(H, [0, -0.2, 0.62], [0.4, 0.06, 0.46], COL.white);
-  add(H, [0, -0.36, 0.44], [0.4, 0.12, 0.64], COL.body, null, 'jaw');
-  add(H, [0, -0.28, 0.48], [0.34, 0.05, 0.42], COL.white, null, 'jaw');
-  for (const sx of [1, -1]) {
-    add(H, [sx * 0.27, 0.19, 0.22], [0.09, 0.11, 0.15], COL.eye);
-    add(H, [sx * 0.2, 0.52, -0.46], [0.09, 0.09, 0.8], COL.horn, [sx * 0.25, 0.6, -1]);
-    add(H, [sx * 0.27, 0.72, -0.62], [0.07, 0.07, 0.3], COL.horn, [sx * 0.2, 1, -0.1]);
-    add(H, [sx * 0.62, -0.08, 0.58], [0.035, 0.035, 1.1], COL.whisker, [sx * 0.9, -0.1, -0.5], 'whisker');
-  }
-  for (let j = 0; j < 5; j++) { const x = (j - 2) * 0.14; add(H, [x, 0.12 + (2 - Math.abs(j - 2)) * 0.06, -0.52], [0.07, 0.2, 0.6], COL.fin, [x * 2, 0.35, -1]); }   // mane
-  add(H, [0, -0.52, 0.2], [0.2, 0.05, 0.42], COL.white, [0, -0.5, -1]);
   return parts;
 }
-const HEAD_SCALE = 2.3;
+const HEAD_SCALE = 1.35;
 
-export function createMusouView(scene, game, camera) {
-  const mu = game.musou, hero = game.hero;
+export function createSurgeView(scene, game, camera) {
+  const mu = game.surge, hero = game.hero;
   const addMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false });
 
   // ---- grade quads
@@ -123,7 +106,7 @@ export function createMusouView(scene, game, camera) {
   // disc (the intro's bokeh blobs, the close-up's blue smears)
   const fx = instanced(scene, new THREE.BoxGeometry(1, 1, 1), Object.assign(addMat(), { depthWrite: true }), R0 + NR);
 
-  // ---- light-voxel shards (dragon trail, contact/finisher bursts, musou KOs)
+  // ---- light-voxel shards (storm trail, contact/finisher bursts, surge KOs)
   const NSH = 700;
   const sh = { m: instanced(scene, new THREE.BoxGeometry(1, 1, 1), Object.assign(addMat(), { depthWrite: true }), NSH), next: 0,   // (r3: depth for the DOF, as fx)
     x: new Float32Array(NSH * 3), v: new Float32Array(NSH * 3), life: new Float32Array(NSH), max: new Float32Array(NSH), size: new Float32Array(NSH), rot: new Float32Array(NSH) };
@@ -140,22 +123,22 @@ export function createMusouView(scene, game, camera) {
     }
   };
 
-  // ---- dragon
-  const parts = dragonParts();
-  const dragon = instanced(scene, shadedBox(), new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }), parts.length);
+  // ---- storm
+  const parts = stormParts();
+  const storm = instanced(scene, shadedBox(), new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }), parts.length);
   const local = parts.map((p) => new THREE.Matrix4().compose(_p.set(...p.off), _q.setFromUnitVectors(FWD, p.dir ? _v.set(...p.dir).normalize() : FWD), _s.set(...p.size)));
-  parts.forEach((p, i) => dragon.setColorAt(i, _c.setRGB(...p.col)));
+  parts.forEach((p, i) => storm.setColorAt(i, _c.setRGB(...p.col)));
   const bases = Array.from({ length: NS + 1 }, () => new THREE.Matrix4());
   const vis = new Uint8Array(NS + 1), born = new Uint8Array(NS + 1);
   const P3 = [0, 0, 0], Q3 = [0, 0, 0], W3 = [0, 0, 0], V3 = [0, 0, 0];
 
   // ---- burst light: the contact light fills the launched fan teal from the camera side (always in the scene at 0 so the
-  // lit materials compile with it at boot instead of hitching mid-Musou)
+  // lit materials compile with it at boot instead of hitching mid-Surge)
   const glow = new THREE.PointLight(0x9fefff, 0, 20, 1.4);
   scene.add(glow);
 
   // ---- calligraphy cut-in (DOM overlay, frame-driven)
-  // integration r1: placed under the HUD's square minimap (ends ≈ 34 vh) and left of the HUD's vertical musou copy
+  // integration r1: placed under the HUD's square minimap (ends ≈ 34 vh) and left of the HUD's vertical surge copy
   const css = document.createElement('style');
   css.textContent = `
     .mu-cut { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0; font-family: "Xingkai SC", "STXingkai", "Libian SC", "Kaiti SC", "STKaiti", serif; }
@@ -169,23 +152,23 @@ export function createMusouView(scene, game, camera) {
   document.head.appendChild(css);
   const cut = document.createElement('div');
   cut.className = 'mu-cut';
-  cut.innerHTML = '<div class="sub">常山 趙子龍</div><div class="big">無雙</div><div class="seal">龍膽</div>';
+  cut.innerHTML = '<div class="sub">先陣 SENJIN</div><div class="big">破陣</div><div class="seal">破陣</div>';
   document.body.appendChild(cut);
   const [cutSub, cutBig, cutSeal] = cut.children;
   const setStyle = (el, k, v) => { if (el.style[k] !== v) el.style[k] = v; };
   const show = (el, v) => { setStyle(el, 'display', v > 0 ? 'block' : 'none'); setStyle(el, 'opacity', v.toFixed(3)); };   // unused layers leave the compositor
 
   // ---- events
-  let tv = -1, time = 0, startX = 0, startZ = 0;            // tv: musou frame (continues past the end for fades)
+  let tv = -1, time = 0, startX = 0, startZ = 0;            // tv: surge frame (continues past the end for fades)
   let contactF = -99, burstF = -99;                          // game frames of the payoff events (flashes ignore hitstop)
-  on('musou:start', (e) => { tv = 0; startX = e.x; startZ = e.z; });
-  on('musou:hit', (e) => { if (e.stage === 'contact') { contactF = game.frame; burst(e.x, e.y, e.z, 45, 11, 7, 0.12, 0.5); } });
-  on('musou:burst', (e) => { burstF = game.frame; burst(e.x, 0.6, e.z, 30, 18, 9, 0.12, 0.35); });
+  on('surge:start', (e) => { tv = 0; startX = e.x; startZ = e.z; });
+  on('surge:hit', (e) => { if (e.stage === 'contact') { contactF = game.frame; burst(e.x, e.y, e.z, 45, 11, 7, 0.12, 0.5); } });
+  on('surge:burst', (e) => { burstF = game.frame; burst(e.x, 0.6, e.z, 30, 18, 9, 0.12, 0.35); });
   on('ko', (e) => { if (mu.active) for (let i = 0; i < 2; i++) shard(e.x, e.y, e.z, e.dx * 5 + vrng.range(-2, 2), vrng.range(2, 7), e.dz * 5 + vrng.range(-2, 2), vrng.range(0.3, 0.55), vrng.range(0.08, 0.14), 0.4, 1.0, 1.5); });
   on('scenario', () => { tv = -1; sh.life.fill(0); for (let i = 0; i < NSH; i++) sh.m.setMatrixAt(i, ZERO); sh.m.instanceMatrix.needsUpdate = true; });
 
   function hideAll() {
-    add.visible = fx.visible = dragon.visible = false;
+    add.visible = fx.visible = storm.visible = false;
     for (const el of [cut, dimEl, washEl]) show(el, 0);
   }
 
@@ -208,12 +191,12 @@ export function createMusouView(scene, game, camera) {
     if (!any) sh.m.visible = false;
   }
 
-  /** Orthonormal frame at arc length a along the dragon path (world), rolled by `roll`; returns false if unborn. */
+  /** Orthonormal frame at arc length a along the storm path (world), rolled by `roll`; returns false if unborn. */
   function frameAt(a, roll, M) {
-    mu.toWorld(dragonAt(a, P3), W3);
-    mu.toWorld(dragonAt(a + 0.08, Q3), V3);
+    mu.toWorld(stormAt(a, P3), W3);
+    mu.toWorld(stormAt(a + 0.08, Q3), V3);
     _z.set(V3[0] - W3[0], V3[1] - W3[1], V3[2] - W3[2]).normalize();
-    mu.toWorld(dragonAt(a - 0.08, Q3), V3);
+    mu.toWorld(stormAt(a - 0.08, Q3), V3);
     _z.add(_v.set(W3[0] - V3[0], W3[1] - V3[1], W3[2] - V3[2]).normalize()).normalize();
     _x.crossVectors(UP, _z);
     if (_x.lengthSq() < 1e-6) _x.set(1, 0, 0);
@@ -223,12 +206,12 @@ export function createMusouView(scene, game, camera) {
     M.makeBasis(_x, _y, _z).setPosition(W3[0], W3[1], W3[2]);
   }
 
-  function updateDragon(t, dt) {
-    const s = (t - MUSOU.contact) / 60;
-    if (s < 0 || s > 1.2) { dragon.visible = false; return; }
-    dragon.visible = true;
-    const A = dragonArc(s);
-    const dissolve = ramp(s, 1.0, (MUSOU.end - MUSOU.contact) / 60);           // tail → head, done at control return
+  function updateStorm(t, dt) {
+    const s = (t - SURGE.contact) / 60;
+    if (s < 0 || s > 1.2) { storm.visible = false; return; }
+    storm.visible = true;
+    const A = stormArc(s);
+    const dissolve = ramp(s, 1.0, (SURGE.end - SURGE.contact) / 60);           // tail → head, done at control return
     const alive = Math.round((NS + 1) * (1 - dissolve));                          // j = 0 head, 1..NS body
     for (let j = 0; j <= NS; j++) {
       const a = j ? A - NECK - (j - 1) * SP : A;
@@ -255,17 +238,17 @@ export function createMusouView(scene, game, camera) {
     const jaw = 0.18 + 0.22 * Math.max(0, Math.sin(time * 7)), wave = Math.sin(time * 11);
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i], j = p.seg + 1;
-      if (!vis[j]) { dragon.setMatrixAt(i, ZERO); continue; }
+      if (!vis[j]) { storm.setMatrixAt(i, ZERO); continue; }
       let L = local[i];
       if (p.dyn === 'jaw') { _q.setFromAxisAngle(_x.set(1, 0, 0), jaw); L = _l.compose(_p.set(p.off[0], p.off[1] - jaw * 0.15, p.off[2]), _q, _s.set(...p.size)); }
       else if (p.dyn === 'whisker') { _q.setFromUnitVectors(FWD, _v.set(p.dir[0], p.dir[1] + wave * 0.4 * Math.sign(p.dir[0]), p.dir[2]).normalize()); L = _l.compose(_p.set(...p.off), _q, _s.set(...p.size)); }
-      dragon.setMatrixAt(i, _m.multiplyMatrices(bases[j], L));
+      storm.setMatrixAt(i, _m.multiplyMatrices(bases[j], L));
     }
-    dragon.instanceMatrix.needsUpdate = true;
+    storm.instanceMatrix.needsUpdate = true;
   }
 
   function updateFx(t) {
-    const M = MUSOU;
+    const M = SURGE;
     let any = false;
     // motes: frozen-time dust of light around the start point; streak past the camera during the chase run
     // (r3: none in the close-up — 1.7 m from the lens with the focus on his face, every mote 3–8 m behind him was a
@@ -280,7 +263,7 @@ export function createMusouView(scene, game, camera) {
       const r = 0.6 + 7.5 * Math.pow(hash01(i, 11), 1.6), a = hash01(i, 12) * 6.283;
       const y = ((hash01(i, 13) * 3.8 + time * (0.12 + 0.1 * hash01(i, 14))) % 3.8) + 0.1;
       const x = startX + Math.cos(a) * r + Math.sin(time * 0.7 + i) * 0.15, z = startZ + Math.sin(a) * r;
-      // r3: frozen-time motes are small crisp specks (DW8 anchor), not bokeh: nothing within 2.5 m of the lens (DOF + bloom
+      // r3: frozen-time motes are small crisp specks (SENJIN tuning anchor), not bokeh: nothing within 2.5 m of the lens (DOF + bloom
       // turned near motes into big white discs that lifted the dark intro to 1.3× gameplay luma), ≤ 3 cm, below bloom level
       const w = (still ? 0.018 + 0.012 * hash01(i, 15) : 0.025 + 0.03 * hash01(i, 15)) * moteK * ramp(dist(x, y, z), 2.5, 4.5);
       _q.setFromAxisAngle(UP, hy);
@@ -319,9 +302,9 @@ export function createMusouView(scene, game, camera) {
       fx.setColorAt(A0 + i, _c.setRGB(0.32 * e, 0.66 * e, 0.92 * e));
       any = true;
     }
-    // finisher ring wave: a thin crackling band of light voxels at waist height riding the sim wave front (DW9's
+    // finisher ring wave: a thin crackling band of light voxels at waist height riding the sim wave front (SENJIN tuning's
     // horizontal lightning ring). r3: was a 0.5–1.6 m wall of 144 additive columns — bunched in a 2–4 m circle round him
-    // and DOF-blurred, it was a teal fog over the first 0.2 s of the finisher that hid Zhao Yun completely
+    // and DOF-blurred, it was a teal fog over the first 0.2 s of the finisher that hid the vanguard completely
     const w0 = t - M.finisher, ringK = w0 >= 0 ? 1 - ramp(w0, M.waveFrames * 0.7, M.waveFrames + 10) : 0;
     const R = mu.waveR || 1, seg = 6.283 * R / NR * 1.15, fk = Math.floor(t / 2);
     for (let i = 0; i < NR; i++) {
@@ -341,12 +324,12 @@ export function createMusouView(scene, game, camera) {
   }
 
   function updateGrade(t) {
-    const M = MUSOU;
-    // dim: +≈20 % flash on the cut frame, full dim 2 frames later (DW8: 1–3 frame flash, dim within 3), lifts during the
+    const M = SURGE;
+    // dim: +≈20 % flash on the cut frame, full dim 2 frames later (SENJIN tuning: 1–3 frame flash, dim within 3), lifts during the
     // chase run, then a light cool tint holds through the payoff (teal-white burst instead of the golden sun haze) and
     // warms back to the golden-hour grade as control returns.
-    // r3: the dim is a teal-night vignette (display-space multiply) centred on Zhao Yun — ≈0.7× on him, ≈0.27× at the
-    // frame edge — so the intro sits at ≈0.6× gameplay luma (DW8 0.52–0.77×) while his ivory lamellar stays readable
+    // r3: the dim is a teal-night vignette (display-space multiply) centred on the vanguard — ≈0.7× on him, ≈0.27× at the
+    // frame edge — so the intro sits at ≈0.6× gameplay luma (SENJIN tuning 0.52–0.77×) while his ivory lamellar stays readable
     // (the pose shot is ≈1.7× the pre-press gameplay frame undimmed, so the cut frame already carries part of the dim)
     const dim = (t < 1 ? 0.45 : t < 2 ? 0.8 : 1) * (1 - ramp(t, M.chase + 4, M.contact));
     const cool = 0.45 * ramp(t, M.chase + 4, M.contact) * (1 - ramp(t, M.contact + 8, M.contact + 30));   // tint the dark-to-bright cut only, not the payoff
@@ -367,7 +350,7 @@ export function createMusouView(scene, game, camera) {
     const washC = c >= 0 && flashC ? 0.35 : 0, washF = f >= 0 && flashF ? 0.3 : 0;   // 2-frame kick, no hold (a hold veiled the launch fan)
     const flash = t < 1 ? 0.09 : 0;                          // r3: the cut frame only (was 0.2 white for 3 frames: +60–90 %)
     const wash = Math.max(flash, washC, washF);
-    // ray centre: contact point, then the finisher (Zhao Yun)
+    // ray centre: contact point, then the finisher (the vanguard)
     if (f >= 0) _p.set(hero.x, 1.4, hero.z);
     else { mu.toWorld([0, 1.3, 2.2], W3); _p.set(W3[0], W3[1], W3[2]); }
     _p.project(camera);
@@ -376,8 +359,8 @@ export function createMusouView(scene, game, camera) {
     if (wash > 0) setStyle(washEl, 'background', flash ? '#fff' :
       `radial-gradient(ellipse at ${(cx * 100).toFixed(1)}% ${((1 - cy) * 100).toFixed(1)}%, rgba(246,255,255,1) 0%, rgba(214,246,250,.75) 30%, rgba(160,214,228,.35) 100%)`);
     // radial rays (HDR, bloom) at contact: the light erupts from inside the crowd (the quad sits 3.5 m past the contact
-    // point, so the bodies in front cut out against it). The finisher has none: the dragon coil and the vfx ray burst
-    // are its light (full-screen rays + a light pillar on top of them bloomed into a white column that hid Zhao Yun)
+    // point, so the bodies in front cut out against it). The finisher has none: the storm coil and the vfx ray burst
+    // are its light (full-screen rays + a light pillar on top of them bloomed into a white column that hid the vanguard)
     const u = addU;
     u.uRays.value = c >= 0 ? 0.1 * (1 - ramp(c, 4, 28)) : 0;
     add.visible = u.uRays.value > 0.002;
@@ -397,7 +380,7 @@ export function createMusouView(scene, game, camera) {
   }
 
   function updateCut(t) {
-    const M = MUSOU;
+    const M = SURGE;
     const k = ramp(t, M.closeup, M.closeup + 5) * (1 - ramp(t, M.pullback + 2, M.pullback + 10));
     show(cut, k);
     if (k <= 0) return;
@@ -408,18 +391,18 @@ export function createMusouView(scene, game, camera) {
     setStyle(cutSub, 'opacity', ramp(t, M.closeup + 10, M.closeup + 20).toFixed(3));
   }
 
-  let warm = 2;                                              // first renders: draw everything as a no-op so shaders compile at boot, not mid-Musou
+  let warm = 2;                                              // first renders: draw everything as a no-op so shaders compile at boot, not mid-Surge
   return {
     update(dt) {
       time += dt;
-      if (warm > 0 && tv < 0) { warm--; addU.uRays.value = 0; add.visible = fx.visible = dragon.visible = sh.m.visible = true; return; }
+      if (warm > 0 && tv < 0) { warm--; addU.uRays.value = 0; add.visible = fx.visible = storm.visible = sh.m.visible = true; return; }
       if (mu.active) tv = mu.t;
-      else if (tv >= 0) { tv += dt * 60; if (tv > MUSOU.end + 50) tv = -1; }
+      else if (tv >= 0) { tv += dt * 60; if (tv > SURGE.end + 50) tv = -1; }
       if (sh.m.visible) updateShards(dt);
       if (tv < 0) { hideAll(); return; }
       updateGrade(tv);
       updateFx(tv);
-      updateDragon(tv, dt);
+      updateStorm(tv, dt);
       updateCut(tv);
     },
   };

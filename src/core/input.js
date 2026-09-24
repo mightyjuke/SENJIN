@@ -1,18 +1,18 @@
 // Input → actions from keyboard, mouse and gamepad.
 // The sim calls sample() exactly once per fixed step; "pressed" edges are latched so a tap
 // between two steps is never lost.
-export const ACTIONS = ['attack', 'charge', 'jump', 'dodge', 'musou'];
+export const ACTIONS = ['attack', 'charge', 'jump', 'dodge', 'surge'];
 
 const KEYMAP = {
   KeyJ: 'attack', KeyK: 'charge', Space: 'jump', KeyL: 'dodge',
-  ShiftLeft: 'dodge', ShiftRight: 'dodge', KeyI: 'musou',
+  ShiftLeft: 'dodge', ShiftRight: 'dodge', KeyI: 'surge',
 };
 const MOVEKEYS = {
   KeyW: [0, 1], ArrowUp: [0, 1], KeyS: [0, -1], ArrowDown: [0, -1],
   KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0],
 };
-// Gamepad (standard mapping): A/× jump, X/□ attack, Y/△ charge, B/○ musou, R1 dodge.
-const PADMAP = { 0: 'jump', 2: 'attack', 3: 'charge', 1: 'musou', 5: 'dodge', 7: 'dodge' };
+// Gamepad (standard mapping): A/× jump, X/□ attack, Y/△ charge, B/○ surge, R1 dodge.
+const PADMAP = { 0: 'jump', 2: 'attack', 3: 'charge', 1: 'surge', 5: 'dodge', 7: 'dodge' };
 
 export function createInput() {
   const dev = { held: {}, latch: {}, keys: new Set(), orbitPx: 0, pad: {} };

@@ -1,15 +1,7 @@
-// Musou (sim): Zhao Yun's 真・無雙 modelled on the DW8XL ground Musou (bench/notes/musou.md), plus a voxel azure dragon.
-// Timeline (musou frames t; t = 1 on the first step after the press; hitstop pauses it):
-//   0  activation — world freezes, an aura shock pushes the nearest soldiers back (clears the stage), spear raised
-//   30 close-up cut-in (≈1 s)          88 pull-back to a charge stance          100 chase run (steerable)
-//   132 CONTACT (2.2 s): radial blast + a shock front rolling 15 m through the crowd ahead (launch fan, CHAIN ≈ 100 in
-//       0.25 s), the dragon bursts from the spear tip and surges through the crowd; the camera whips round to the flank
-//       that faces away from the sun (front-lit fan), holds low while the bodies fly, then eases back for the finisher
-//   166 hard cut to a low wide shot from behind him as the dragon rears for its dive (r3)
-//   176 FINISHER: the dragon dives onto Zhao Yun and coils skyward; a ring wave launches everything in tiers
-//   200 control returns (≈3.35 s)
-// Emits musou:ready/start/hit/burst/end. The camera asks mu.shot() for the shot list; src/musou/view.js renders the
-// grade, motes, dragon and payoff light from this state (dragonPath is shared so the hits land where the dragon is).
+// Surge (sim): original SENJIN signature attack — a forward storm rush followed by a radial formation-breaking finisher.
+// Timeline (Surge frames): activation hold, camera pull-back, steerable rush, contact shock front,
+// then an abstract energy-storm ribbon traces the attack path before the radial finisher.
+// The simulation owns damage and timing; the view owns grading, motes and the storm ribbon.
 import { emit } from '../core/events.js';
 import { CLIPS } from '../hero/hero.js';
 import { P, clip, spearAbout } from '../hero/rig.js';
@@ -17,37 +9,37 @@ import { setState, stickDir, turnToward } from '../hero/locomotion.js';
 import { ST } from '../crowd/crowd.js';
 import { SUN_DIR } from '../world/sky.js';
 
-export const MUSOU = {
+export const SURGE = {
   closeup: 30, pullback: 88, chase: 100, contact: 132, finisher: 176, end: 200,
   aura: { r0: 5.2, k: 0.35, frames: 5 },   // d < r0/(1-k) → pushed out to r0 + d·k over `frames`
   chaseSpeed: 10, chaseTurn: 2.4,          // m/s, rad/s
-  rushDist: 2.4,                           // hero drives this far behind the dragon (m, over 0.6 s)
+  rushDist: 2.4,                           // hero drives this far behind the storm (m, over 0.6 s)
   waveR: 12, waveFrames: 18,
   // r3: bench launch = 0.5–1.5 H up and 2–4 H back in a fan. The contact fan is a 'blow' (thrown back along the blast;
   // a sector 'launch' gathered the bodies into a pile toward him), and the rush re-hits only juggle bodies below ≈1.4 H
-  // (yMax ≈ 1 H), so the fan hangs at chest-to-head height while the dragon tears through it instead of being popped up a
+  // (yMax ≈ 1 H), so the fan hangs at chest-to-head height while the storm tears through it instead of being popped up a
   // little more every tick (it climbed to 4 m and was still airborne 0.6 s after control returned)
   contactHit: { shape: 'sector', range: 9.5, ang: 210, dmg: 12, kb: 'blow', force: 6.5, lift: 8.2, hitstop: 3, yMax: 5 },
-  // the contact shock front rolls on through the crowd ahead (bench: CHAIN 9→91 in 0.4 s, a 20–35 body launch fan)
+  // the contact shock front rolls on through the crowd ahead (tuning target: CHAIN 9→91 in 0.4 s, a 20–35 body launch fan)
   front: { frames: 24, r0: 4, r1: 15, ang: 180 },
   backHit: { shape: 'circle', range: 3.2, dmg: 12, kb: 'launch', force: 5, lift: 7, hitstop: 0, yMax: 5 },
-  dragonHit: { shape: 'circle', range: 2.7, dmg: 16, kb: 'launch', force: 5.5, lift: 6, hitstop: 0, yMax: 1.9 },
+  stormHit: { shape: 'circle', range: 2.7, dmg: 16, kb: 'launch', force: 5.5, lift: 6, hitstop: 0, yMax: 1.9 },
   heroHit: { shape: 'circle', range: 3.0, dmg: 7, kb: 'launch', force: 4.5, lift: 5, hitstop: 0, yMax: 1.7 },
   waveHit: { shape: 'circle', range: 0, dmg: 60, kb: 'blow', force: 7.5, lift: 9.5, hitstop: 0, heavy: true, yMax: 6 },
-  cost: 1 / 3,                             // one Musou spends one of the gauge's 3 segments (DW8)
+  cost: 1 / 4,                             // one Surge spends one of the gauge's four segments (SENJIN tuning)
 };
 
-// ---------------------------------------------------------------- dragon path (pure; shared with the view)
+// ---------------------------------------------------------------- storm path (pure; shared with the view)
 // Keys [s seconds after contact, left, up, forward] in the contact frame (origin = hero at contact, +forward = facing).
 // Surge ahead, sweep broadside through the crowd on the left — the far side from the payoff camera (mu.side mirrors it),
-// so it reads as a serpent crossing the frame — rear up high on that side and dive onto Zhao Yun for the finisher coil
+// so it reads as a serpent crossing the frame — rear up high on that side and dive onto the vanguard for the finisher coil
 // (it never loops over the camera's side: the old arc passed 3 m from the lens and blotted out the finisher).
 const DK = [
   [-0.08, 0, 1.25, 0.4], [0, 0, 1.4, 1.9], [0.08, 0.5, 2.1, 5.6], [0.16, 2.4, 2.5, 8.4], [0.25, 5.6, 2.4, 8.4],
   [0.34, 7.2, 2.6, 3.4], [0.43, 5.6, 3.6, 0.6], [0.52, 3.2, 5.4, 0.4], [0.6, 1.4, 6.0, 2.2], [0.67, 0.6, 4.2, 3.6],
 ];
 { // coil: dive onto the hero (at forward = rushDist) and spiral up around him
-  const s0 = MUSOU.finisher - MUSOU.contact, c = MUSOU.rushDist;
+  const s0 = SURGE.finisher - SURGE.contact, c = SURGE.rushDist;
   for (let k = 0; k <= 24; k++) {
     const s = s0 / 60 + k * 0.03, a = k * 0.03 * 13, r = 1.7 + k * 0.03 * 0.9;
     DK.push([s, r * Math.sin(a), 1.1 + k * 0.03 * 14, c + r * Math.cos(a)]);
@@ -72,15 +64,15 @@ const TAB = new Float32Array(TN * 3), ARC = new Float32Array(TN);
     ARC[k] = k ? ARC[k - 1] + Math.hypot(p[0] - TAB[k * 3 - 3], p[1] - TAB[k * 3 - 2], p[2] - TAB[k * 3 - 1]) : 0;
   }
 }
-const ARC0 = ARC[Math.round(-TS0 / TDT)];                  // arc length where the dragon leaves the spear tip
-export const DRAGON = { arcMax: ARC[TN - 1] - ARC0, life: DK[DK.length - 1][0] };
+const ARC0 = ARC[Math.round(-TS0 / TDT)];                  // arc length where the storm leaves the spear tip
+export const STORM = { arcMax: ARC[TN - 1] - ARC0, life: DK[DK.length - 1][0] };
 /** Arc length (m past the spear tip) of the head at s seconds after contact. */
-export function dragonArc(s) {
+export function stormArc(s) {
   const f = Math.min(TN - 1, Math.max(0, (s - TS0) / TDT)), k = Math.floor(f), u = f - k;
   return (k + 1 < TN ? ARC[k] + (ARC[k + 1] - ARC[k]) * u : ARC[k]) - ARC0;
 }
 /** Point on the path at arc length a (m past the spear tip), contact frame [left, up, fwd]. */
-export function dragonAt(a, out) {
+export function stormAt(a, out) {
   a += ARC0;
   let lo = 0, hi = TN - 1;
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ARC[m] < a) lo = m; else hi = m; }
@@ -114,7 +106,7 @@ const runKey = (u) => {
     footL: foot(0.12, 0), footR: foot(-0.12, Math.PI), spear: [-0.2, 1.02 - s * 0.03, -0.08, 5, -3, 90] }), 'lin'];
 };
 Object.assign(CLIPS, {
-  // DW8 activation: spear planted upright in the right hand, left arm thrown out, chin up at the camera
+  // SENJIN tuning activation: spear planted upright in the right hand, left arm thrown out, chin up at the camera
   mu_act: clip([
     [0, P()],
     [0.35, P(RAISE), 'out'],
@@ -142,7 +134,7 @@ Object.assign(CLIPS, {
 });
 
 const DT = 1 / 60;
-const S_OF = (t) => (t - MUSOU.contact) / 60;              // seconds after contact
+const S_OF = (t) => (t - SURGE.contact) / 60;              // seconds after contact
 const easeOut = (u) => 1 - (1 - u) * (1 - u);
 const smooth = (u) => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -152,15 +144,15 @@ const SUN_AZ = Math.atan2(SUN_DIR.x, SUN_DIR.z), SUN_AVOID = 1.05;
 const offSun = (y) => { const d = wrap(y - SUN_AZ); return Math.abs(d) >= SUN_AVOID ? y : SUN_AZ + (d < 0 ? -1 : 1) * SUN_AVOID; };
 const PAYOFF_YAW = 1.15;                                   // payoff camera: this far round from the rush direction (rad)
 
-export function createMusou(game) {
+export function createSurge(game) {
   const mu = { active: false, t: 0, wasReady: false, yaw0: 0, ax: 0, az: 0, ayaw: 0, side: 1, waveR: 0, seq: 0 };
   const shot = { id: 0, yaw: 0, dist: 0, pitch: 0, fov: 50, height: 1.2, side: 0, shake: 1 };
   const push = [];                                           // [i, fromX, fromZ, toX, toZ] aura displacement
-  let startMusou = 0;
+  let startSurge = 0;
 
   mu.reset = () => { mu.active = false; mu.t = 0; mu.wasReady = false; mu.waveR = 0; mu.side = 1; push.length = 0; };
 
-  /** Contact frame → world. `side` mirrors left/right so the dragon's broadside sweep runs on the far side of the
+  /** Contact frame → world. `side` mirrors left/right so the storm's broadside sweep runs on the far side of the
    *  payoff camera (side +1: camera behind-right of the rush, −1: behind-left). */
   mu.toWorld = (p, out) => {
     const s = Math.sin(mu.ayaw), c = Math.cos(mu.ayaw), l = p[0] * mu.side;
@@ -170,18 +162,18 @@ export function createMusou(game) {
 
   mu.start = (inp) => {
     const h = game.hero, c = game.crowd;
-    const [sx, sz, smag] = stickDir(inp, game.cam.yaw);           // held stick aims the Musou (else: current facing)
+    const [sx, sz, smag] = stickDir(inp, game.cam.yaw);           // held stick aims the Surge (else: current facing)
     if (smag) h.yaw = Math.atan2(sx, sz);
     mu.active = true; mu.t = 0; mu.waveR = 0; mu.seq++;
     mu.yaw0 = mu.ayaw = h.yaw; mu.ax = h.x; mu.az = h.z;
-    startMusou = h.musou;
+    startSurge = h.surge;
     h.move = null; h.vx = h.vz = 0;
-    setState(h, 'musou');
-    h.musouClip = 'mu_act'; h.musouT = 0;
-    h.iframes = MUSOU.end + 30;
+    setState(h, 'surge');
+    h.surgeClip = 'mu_act'; h.surgeT = 0;
+    h.iframes = SURGE.end + 30;
     game.freeze = 2;
     // activation aura: grounded soldiers inside r0/(1-k) recoil outward (frozen mid-stagger until contact)
-    const { r0, k } = MUSOU.aura, R1 = r0 / (1 - k);
+    const { r0, k } = SURGE.aura, R1 = r0 / (1 - k);
     push.length = 0;
     for (let i = 0; i < c.N; i++) {
       const s = c.st[i];
@@ -193,68 +185,68 @@ export function createMusou(game) {
       c.releaseToken(i);
       c.st[i] = ST.KNOCK; c.stT[i] = 0; c.vx[i] = c.vz[i] = 0;
     }
-    emit('musou:start', { x: h.x, y: h.y, z: h.z, yaw: h.yaw, frame: game.frame, dur: MUSOU.end, activation: MUSOU.closeup,
-      burstAt: MUSOU.finisher, contact: MUSOU.contact, pushed: push.length });
+    emit('surge:start', { x: h.x, y: h.y, z: h.z, yaw: h.yaw, frame: game.frame, dur: SURGE.end, activation: SURGE.closeup,
+      burstAt: SURGE.finisher, contact: SURGE.contact, pushed: push.length });
   };
 
   // hit-window keys are negative (hero moves use ≥ 0) and unique per activation (enemies remember their last key)
-  const hitAt = (hit, x, z, yaw, key, rehit) => game.combat.strike(hit, x, z, yaw, key - (mu.seq % 1000) * 100000, rehit, 'musou');
+  const hitAt = (hit, x, z, yaw, key, rehit) => game.combat.strike(hit, x, z, yaw, key - (mu.seq % 1000) * 100000, rehit, 'surge');
   const P3 = [0, 0, 0], W3 = [0, 0, 0];
 
-  /** Runs in place of combo/locomotion while the hero is in the 'musou' state. */
+  /** Runs in place of combo/locomotion while the hero is in the 'surge' state. */
   mu.stepHero = (inp) => {
-    const h = game.hero, c = game.crowd, t = ++mu.t, M = MUSOU;
+    const h = game.hero, c = game.crowd, t = ++mu.t, M = SURGE;
     h.iframes = Math.max(h.iframes, 2);
     h.vx = h.vz = 0;
-    h.musou = Math.max(0, startMusou - h.musouMax * M.cost * Math.min(1, t / M.contact));   // one segment drains by contact
+    h.surge = Math.max(0, startSurge - h.surgeMax * M.cost * Math.min(1, t / M.contact));   // one segment drains by contact
     if (t < M.contact) game.freeze = Math.max(game.freeze, 2);          // world holds still until contact
     if (t <= M.aura.frames) {                                            // aura shove (eased), then hold
       const u = easeOut(t / M.aura.frames);
       for (const [i, fx, fz, tx, tz] of push) if (c.st[i] === ST.KNOCK) { c.x[i] = fx + (tx - fx) * u; c.z[i] = fz + (tz - fz) * u; }
     }
-    if (t < M.closeup) { h.musouClip = 'mu_act'; h.musouT = t / M.closeup; return; }
-    if (t < M.pullback) { h.musouClip = 'mu_face'; h.musouT = (t - M.closeup) / (M.pullback - M.closeup); return; }
-    if (t < M.chase) { h.musouClip = 'mu_charge'; h.musouT = (t - M.pullback) / (M.chase - M.pullback); return; }
+    if (t < M.closeup) { h.surgeClip = 'mu_act'; h.surgeT = t / M.closeup; return; }
+    if (t < M.pullback) { h.surgeClip = 'mu_face'; h.surgeT = (t - M.closeup) / (M.pullback - M.closeup); return; }
+    if (t < M.chase) { h.surgeClip = 'mu_charge'; h.surgeT = (t - M.pullback) / (M.chase - M.pullback); return; }
     if (t < M.contact) {                                                 // chase run: sprint, steerable
       const [dx, dz, mag] = stickDir(inp, mu.yaw0);                    // stick is relative to the chase view (behind the rush)
       if (mag) turnToward(h, Math.atan2(dx, dz), M.chaseTurn * DT);
       const v = M.chaseSpeed * Math.min(1, (t - M.chase) / 6);
       h.x += Math.sin(h.yaw) * v * DT; h.z += Math.cos(h.yaw) * v * DT;
-      h.musouClip = 'mu_run'; h.musouT = (t - M.chase) / 17;
+      h.surgeClip = 'mu_run'; h.surgeT = (t - M.chase) / 17;
       return;
     }
-    if (t === M.contact) {                                               // CONTACT: blast + the dragon is released
+    if (t === M.contact) {                                               // CONTACT: blast + the storm is released
       mu.ax = h.x; mu.az = h.z; mu.ayaw = h.yaw;
       // payoff camera side: whichever side of the rush looks further away from the sun (front-lit launch fan)
       mu.side = Math.abs(wrap(h.yaw + PAYOFF_YAW - SUN_AZ)) >= Math.abs(wrap(h.yaw - PAYOFF_YAW - SUN_AZ)) ? 1 : -1;
       const n = hitAt(M.contactHit, h.x, h.z, h.yaw, -2000, false) + hitAt(M.backHit, h.x, h.z, h.yaw, -2000, false);
-      emit('musou:hit', { count: n, x: h.x + Math.sin(h.yaw) * 2.5, y: 1.3, z: h.z + Math.cos(h.yaw) * 2.5, stage: 'contact', yaw: h.yaw, n: 0 });
+      emit('surge:hit', { count: n, x: h.x + Math.sin(h.yaw) * 2.5, y: 1.3, z: h.z + Math.cos(h.yaw) * 2.5, stage: 'contact', yaw: h.yaw, n: 0 });
     }
     const k0 = t - M.contact, F = M.front;
     if (k0 > 0 && k0 <= F.frames && k0 % 2 === 0) {                    // expanding launch front (same key: each body once)
       const r = F.r0 + (F.r1 - F.r0) * easeOut(k0 / F.frames);
       const n = hitAt({ ...M.contactHit, range: r, ang: F.ang, hitstop: 0, force: 5.5 + r * 0.2, lift: 7.4 + r * 0.12 }, mu.ax, mu.az, mu.ayaw, -2000, false);
-      if (n) emit('musou:hit', { count: n, x: mu.ax + Math.sin(mu.ayaw) * r * 0.8, y: 1.2, z: mu.az + Math.cos(mu.ayaw) * r * 0.8, stage: 'front', yaw: mu.ayaw, n: k0 });
+      if (n) emit('surge:hit', { count: n, x: mu.ax + Math.sin(mu.ayaw) * r * 0.8, y: 1.2, z: mu.az + Math.cos(mu.ayaw) * r * 0.8, stage: 'front', yaw: mu.ayaw, n: k0 });
     }
     const s = S_OF(t);
-    // hero drives forward behind the dragon (along the contact facing, so the dragon's path stays anchored)
+    // hero drives forward behind the storm (along the contact facing, so the storm's path stays anchored)
     const d = M.rushDist * easeOut(Math.min(1, s / 0.6));
     h.x = mu.ax + Math.sin(mu.ayaw) * d; h.z = mu.az + Math.cos(mu.ayaw) * d; h.yaw = mu.ayaw;
     if (t < M.finisher) {
-      h.musouClip = 'mu_rush'; h.musouT = (t - M.contact) / (M.finisher - M.contact);
+      h.surgeClip = 'mu_rush'; h.surgeT = (t - M.contact) / (M.finisher - M.contact);
       const k = t - M.contact;
-      mu.toWorld(dragonAt(dragonArc(s), P3), W3);
-      if (k > 0 && k % 2 === 0 && W3[1] < 4.2) {                          // the dragon tears through the crowd
-        const n = hitAt(M.dragonHit, W3[0], W3[2], mu.ayaw, -2100 - t, true);
-        emit('musou:hit', { count: n, x: W3[0], y: W3[1], z: W3[2], stage: 'dragon', yaw: mu.ayaw, n: k });
+      mu.toWorld(stormAt(stormArc(s), P3), W3);
+      if (k > 0 && k % 2 === 0 && W3[1] < 4.2) {                          // the storm tears through the crowd
+        const n = hitAt(M.stormHit, W3[0], W3[2], mu.ayaw, -2100 - t, true);
+        emit('surge:hit', { count: n, x: W3[0], y: W3[1], z: W3[2], stage: 'storm', yaw: mu.ayaw, n: k });
       }
-      if (k > 0 && k % 3 === 0) {                                        // Zhao Yun's own sweeps around him
+      if (k > 0 && k % 3 === 0) {                                        // the vanguard's own sweeps around him
         const n = hitAt(M.heroHit, h.x, h.z, h.yaw, -2200 - t, true);
-        emit('musou:hit', { count: n, x: h.x, y: 1.1, z: h.z, stage: 'rush', yaw: h.yaw, n: k });
+        emit('surge:hit', { count: n, x: h.x, y: 1.1, z: h.z, stage: 'rush', yaw: h.yaw, n: k });
       }
       return;
     }
-    h.musouClip = 'mu_fin'; h.musouT = (t - M.finisher) / (M.end - M.finisher);
+    h.surgeClip = 'mu_fin'; h.surgeT = (t - M.finisher) / (M.end - M.finisher);
     const w = t - M.finisher;
     if (w <= M.waveFrames) {                                             // FINISHER: ring wave, tiers of launched bodies
       const u = w / M.waveFrames;
@@ -262,32 +254,32 @@ export function createMusou(game) {
       // heavy (officers fly too) only on the first ticks: every heavy tick also costs a vfx dust puff + camera kick
       const hit = { ...M.waveHit, range: mu.waveR, lift: M.waveHit.lift - 4 * u, hitstop: w === 0 ? 4 : 0, heavy: w < 2 };
       const n = hitAt(hit, h.x, h.z, h.yaw, -3000, false);
-      if (w === 0) emit('musou:burst', { count: n, x: h.x, y: 0.2, z: h.z, frame: game.frame });
+      if (w === 0) emit('surge:burst', { count: n, x: h.x, y: 0.2, z: h.z, frame: game.frame });
       else if (n) {                                                      // report the tick on the wave front (sparks ride the ring)
         const a = w * 2.4, R = mu.waveR * 0.9;
-        emit('musou:hit', { count: n, x: h.x + Math.sin(a) * R, y: 0.4, z: h.z + Math.cos(a) * R, stage: 'wave', yaw: a, n: w });
+        emit('surge:hit', { count: n, x: h.x + Math.sin(a) * R, y: 0.4, z: h.z + Math.cos(a) * R, stage: 'wave', yaw: a, n: w });
       }
     }
     if (t >= M.end) {
       mu.active = false;
-      h.musou = Math.max(0, startMusou - h.musouMax * M.cost);
+      h.surge = Math.max(0, startSurge - h.surgeMax * M.cost);
       h.iframes = 30;
       setState(h, 'idle');
-      emit('musou:end', { frame: game.frame });
+      emit('surge:end', { frame: game.frame });
     }
   };
 
   /**
-   * Camera shot for the current musou frame (render side reads it; pure of sim state). id changes = hard cut.
+   * Camera shot for the current surge frame (render side reads it; pure of sim state). id changes = hard cut.
    * yaw/dist/pitch/height as in the camera rig (target = hero + height, camera `dist` back along yaw at `pitch`),
    * side = target offset to screen-right (m), shake = multiplier on event shake.
    */
   mu.shot = () => {
     if (!mu.active) return null;
-    const t = mu.t, M = MUSOU, h = game.hero, o = shot;
+    const t = mu.t, M = SURGE, h = game.hero, o = shot;
     const ease = (a, b, u) => a + (b - a) * (u * u * (3 - 2 * u));
     o.shake = 0.3; o.side = 0;
-    // r3: the intro shots look DOWN onto the cobbles and the frozen crowd (DW8 anchor-activation-pose), never up into the
+    // r3: the intro shots look DOWN onto the cobbles and the frozen crowd (SENJIN tuning anchor-activation-pose), never up into the
     // hazy sunlit sky: the old low, level pose (pitch -0.07) was 2.1× gameplay luma before the dim, so the intro never
     // went dark and the payoff had nothing to release from. Yaws stay off the sun's azimuth.
     if (t < M.closeup) {                                   // front three-quarter from above head height, slow push-in
@@ -300,7 +292,7 @@ export function createMusou(game) {
     } else if (t < M.contact) {                            // low chase camera behind him (never into the sun)
       Object.assign(o, { id: 3, yaw: h.yaw, dist: 2.7, pitch: 0.08, fov: 54, height: 0.95 });
     } else if (t >= M.finisher - 10) {
-      // r3 finisher: cut (as the dragon rears for its dive) to a low wide shot from behind him (DW9 ring-wave framing:
+      // r3 finisher: cut (as the storm rears for its dive) to a low wide shot from behind him (SENJIN tuning ring-wave framing:
       // hero ≈ 20 % of frame height, the launched tiers stacked against the sky, the dive onto him and the coil in full
       // view). The old flank camera had the dive + coil 4–6 m from the lens and the wave dust between, a teal fog with
       // no hero in it. It is also the gameplay side of him, so the blend back to control is short.
@@ -309,8 +301,8 @@ export function createMusou(game) {
         height: 1.5 + 0.3 * u, side: 0, shake: 0.6 });
     } else {
       // payoff: whip round to the sun-side-away flank of the rush (≈66° off the rush line), low, so the launch fan
-      // crosses the frame front-lit and the dragon's sweep runs broadside on the far side; hold that while the bodies
-      // fly, then ease back, still low, for the finisher: the ring wave throws its tiers against the sky and the dragon
+      // crosses the frame front-lit and the storm's sweep runs broadside on the far side; hold that while the bodies
+      // fly, then ease back, still low, for the finisher: the ring wave throws its tiers against the sky and the storm
       // coils up around him
       const c = t - M.contact, w = easeOut(Math.min(1, c / 9)), k = smooth((c - 34) / 22);
       const sw = mu.side * PAYOFF_YAW * w;
@@ -321,12 +313,12 @@ export function createMusou(game) {
     return o;
   };
 
-  /** At least one full gauge segment (hero.js asks before starting a Musou). */
-  mu.ready = () => game.hero.musou >= game.hero.musouMax * MUSOU.cost - 1e-6;
+  /** At least one full gauge segment (hero.js asks before starting a Surge). */
+  mu.ready = () => game.hero.surge >= game.hero.surgeMax * SURGE.cost - 1e-6;
   /** Gauge-ready notification (edge-triggered). */
   mu.step = () => {
-    const ready = mu.ready() && game.hero.state !== 'musou';
-    if (ready && !mu.wasReady) emit('musou:ready', {});
+    const ready = mu.ready() && game.hero.state !== 'surge';
+    if (ready && !mu.wasReady) emit('surge:ready', {});
     mu.wasReady = ready;
   };
   return mu;

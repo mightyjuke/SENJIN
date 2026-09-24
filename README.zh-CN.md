@@ -1,84 +1,33 @@
 [English](README.md) | **简体中文** | [日本語](README.ja.md)
 
-# Voxel Musou — 赵云（趙雲）
+# SENJIN — 先陣
 
-<p align="center">
-  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="赵云独战 300 魏兵——无双" width="100%"></a>
-</p>
+SENJIN 是一款使用 Three.js 制作、可直接在浏览器运行的体素战场动作原型。玩家扮演冲锋在前的先锋战士，突破密集敌阵、击败敌将，并积累 Surge 能量发动大范围破阵技。
 
-<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ 在浏览器中直接试玩 — voxel-musou.vercel.app</a></b></p>
+项目采用原创虚构战场设定，不使用第三方商业游戏作品中的角色名称、美术、音频、Logo、剧情素材或其他游戏资产。
 
-| | |
-| --- | --- |
-| ![混战，400+ 连击](media/crowd.jpg) | ![蓄力横扫](media/sweep.jpg) |
-| 混战，400+ 连击 | 蓄力横扫 |
-| ![无双 cut-in 特写](media/musou.jpg) | ![无双龙影，150 击破](media/dragon.jpg) |
-| 无双 cut-in 特写 | 无双龙影，150 击破 |
+## 特点
 
-一款可在浏览器中直接游玩的体素风动作游戏，玩法致敬《真·三国无双》，基于 Three.js 开发。操控赵云，手持长枪，在数百名魏军中杀出一条血路。
-
-无需构建：纯 ES 模块，Three.js r186 已内置于 `vendor/three/`，逻辑以固定 60 Hz 确定性步进运行。
-
-## 特色
-
-- 流畅的普通连招（N1–N6）与蓄力攻击（C1–C6）
-- 跳跃、跳跃攻击与闪避
-- 打击停顿（hit-stop）与命中特效
-- 密集的体素魏军（约 300 人，InstancedMesh），被击飞后碎成体素碎块
-- 敌将头顶显示姓名与血条
-- 无双乱舞：神龙演出与画面调色
-- 黄昏时分的城池战场，火光与旌旗
-- 自定义后处理：大气雾霭、景深、泛光、复古像素风
-- 程序化生成的 WebAudio 音效
-- 书法风格 HUD
+- 普通连击、蓄力攻击、跳跃攻击和闪避组成的长兵器战斗
+- 使用 `InstancedMesh` 呈现数百名体素敌兵
+- 带生命条的敌方将领
+- Surge 能量槽与电影化破阵必杀技
+- 程序化战场、城墙、火焰、军旗与 VFX
+- WebAudio 程序化音效，不使用下载的商业游戏音频
+- 固定 60 Hz 确定性模拟
+- 纯 ES Modules，无需构建步骤
 
 ## 运行
-
-ES 模块无法通过 `file://` 加载，请用任意静态服务器托管此目录：
 
 ```sh
 python3 -m http.server 8000
 ```
 
-然后打开 http://localhost:8000 。需要支持 WebGL2 的浏览器，推荐使用独立显卡的桌面电脑。首次按键或点击后开始播放声音。
+打开 `http://localhost:8000`。需要支持 WebGL2 的浏览器。
 
-## 操作
+## 许可
 
-键盘加鼠标，也可使用手柄。
-
-| 动作 | 按键 |
-| --- | --- |
-| 移动（相对镜头方向） | WASD / 方向键 |
-| 普通攻击 | J / 鼠标左键 |
-| 蓄力攻击 | K / 鼠标右键 |
-| 跳跃 | 空格 |
-| 闪避 | L / Shift |
-| 无双 | I |
-| 旋转镜头 | 鼠标拖动 / Q E |
-| 暂停 / 操作说明 | Esc |
-| 开始 | Enter / 点击「出陣」 |
-
-![开始画面与完整操作说明](media/title.jpg)
-
-## 选项
-
-| URL 参数 | 说明 |
-| --- | --- |
-| `?enemies=N` | 敌兵数量，0–2000（默认 300） |
-
-## 目录结构
-
-```
-index.html      入口、importmap、HUD 样式
-src/            core、hero、combat、crowd、musou、camera、vfx、post、world、audio、ui
-vendor/three/   Three.js r186
-media/          README 截图与 GIF
-```
-
-## 致谢与许可
-
-- 代码：MIT 许可，见 [LICENSE](LICENSE)。
-- [three.js](https://threejs.org/)：MIT 许可。
-- HUD 备用字体 `src/ui/brush.woff2` 是 Yuji Boku（Kinuta Font Factory）的子集，采用 SIL Open Font License 1.1 授权。
-
-本项目为同人作品，与 KOEI TECMO 无关，也未获其认可。“Dynasty Warriors”（真·三国无双）是 KOEI TECMO 的商标。本项目不包含任何原作游戏素材。
+- 原项目代码：MIT — [LICENSE](LICENSE)
+- Three.js：MIT — [LICENSES/three.js-MIT.txt](LICENSES/three.js-MIT.txt)
+- `src/ui/brush.woff2`：Yuji Boku 子集 / SIL Open Font License 1.1 — [LICENSES/Yuji-Boku-OFL-1.1.txt](LICENSES/Yuji-Boku-OFL-1.1.txt)
+- 详细归属：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)

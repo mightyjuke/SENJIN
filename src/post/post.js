@@ -14,7 +14,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 
 // Tunables. Every key k is uniform u<K> in all passes.
-// Tuned on overview / crowd-fight / musou captures toward the concept stats (luma mean ≈ 0.36, p5 ≤ 0.08, p95 ≥ 0.78,
+// Tuned on overview / crowd-fight / surge captures toward the concept stats (luma mean ≈ 0.36, p5 ≤ 0.08, p95 ≥ 0.78,
 // saturation ≈ 0.33, bottom third darker): r2 medians mean 0.34-0.39, p5 0.05-0.06, p95 0.63-0.76, sat 0.32-0.33,
 // hero armour never at white (it was 3-7 % of the hero box). The scene itself is low-contrast (scene-luminance p50 ≈ 0.11,
 // p95 ≈ 0.22), hence the steep curve.
@@ -143,7 +143,7 @@ const FinalShader = /* glsl */`
     c *= uExposure;
     float L = max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-6);
     float cool = smoothstep(0.0, 0.25, (c.b - c.r) / max(c.b, 1e-4));
-    // (emissive-hot light — musou burst, flashes — fades back to neutral so it still burns to white, not cream)
+    // (emissive-hot light — surge burst, flashes — fades back to neutral so it still burns to white, not cream)
     c *= mix(mix(uShadowTint, mix(uHighTint, vec3(0.97, 1.0, 1.06), cool), smoothstep(uTintLo, uTintHi, L)), vec3(1.0), smoothstep(1.2, 3.0, L));
     L = max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-6);
     c = max(mix(vec3(L), c, uSat), 0.0);
@@ -204,7 +204,7 @@ export function createPost({ canvas, enabled = true, width, height }) {
       }`;
     // bloom keeps its source's hue (orange fire → orange halo, blue arc → blue halo); the wide mips lean only a little
     // warm, the grade already carries the golden hour. The two widest mips are faint: at full weight a large bright mass
-    // (the Musou payoff's dragon + light shards) spread into a screen-wide pale-blue veil; light stays a local glow.
+    // (the Surge payoff's storm ribbon + light shards) spread into a screen-wide pale-blue veil; light stays a local glow.
     bloom.bloomTintColors = [v3([0.95, 1, 1.08]), v3([1, 0.97, 0.93]), v3([0.45, 0.42, 0.39]), v3([0.12, 0.11, 0.1]), v3([0.03, 0.026, 0.023])];
     const dofU = { uFocus: { value: 7 }, uNearScale: { value: 1 }, uFarScale: { value: 1 }, uBandN: { value: 3 }, uBandF: { value: 5 } };   // shared by dof + final
     atmos = new FullScreenQuad(mat(AtmosShader, {
