@@ -12,7 +12,7 @@
   html, body { margin: 0; height: 100%; background: #1a120d; overflow: hidden; }
   canvas#c { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
 
-  /* ---- HUD (owned by the hud part). reference build layout, concept calligraphy. 1rem = 1/72 viewport height (10 px @720p). ---- */
+  /* ---- HUD (owned by the hud part). SENJIN layout, concept calligraphy. 1rem = 1/72 viewport height (10 px @720p). ---- */
   html { font-size: calc(100vh / 72); }
   /* Portable brush fallback for machines without the macOS Xingkai/Kaiti assets: Yuji Boku (SIL OFL 1.1, Kinuta Font
      Factory), subset to the HUD's glyphs (src/ui/brush.woff2). Only fetched when the fonts before it are missing.
@@ -73,7 +73,7 @@
   #hud .mu.active i { background: linear-gradient(#ffffff, #bfe8ff 45%, #4aa2ff); }
   #hud .mu.active span { color: #d8f2ff; text-shadow: 0 0 1rem #58b2ff; }
 
-  /* Heavy numerals (KO, chain, milestone): reference build's weight in brush calligraphy. <b class="dig" data-t="N"><span>N</span></b>:
+  /* Heavy numerals (KO, chain, milestone): SENJIN's weight in brush calligraphy. <b class="dig" data-t="N"><span>N</span></b>:
      ::before is a dark rim + halo (thick stroke, drop shadows) so digits read over white surge flashes and dark crowds;
      the span is a bevelled vertical gradient, fattened by an edge stroke in the mid tone. */
   #hud .dig { position: relative; isolation: isolate; padding: 0 .12em; --rw: .6rem; --ew: .16rem;
@@ -96,13 +96,13 @@
   #hud .h-ko small { color: #ffe0a0; margin-top: -.4rem; }
   #hud .h-chain { left: 11%; top: 45%; }
   #hud .h-chain b { transform-origin: 0 85%; --hi: #f4feff; --mid: #9aeaff; --lo: #1d78c0; --rim: #041a2e; --edge: #5cc8f4; }
-  /* chain ghosts (pool of 3, one per tick): pale cyan digit with a reference build motion smear trailing up-right, where it came from */
+  /* chain ghosts (pool of 3, one per tick): pale cyan digit with a SENJIN motion smear trailing up-right, where it came from */
   #hud .h-chain u { transform-origin: 0 100%; color: #f4feff; -webkit-text-stroke: .22rem #3aa6f0; padding: 0 .12em;
     text-shadow: .12em -.1em 0 rgba(130,220,255,.55), .24em -.2em 0 rgba(110,205,255,.3), .36em -.3em .1rem rgba(90,190,255,.14),
       0 0 1.2rem rgba(90,200,255,.9); }
   #hud .h-chain small { color: #bfeeff; margin: -.3rem 0 0 .3rem; }
 
-  /* KO milestone: centre, heavy gold brush number (digits ~13 % H like reference build) + red 擊破 seal stamp */
+  /* KO milestone: centre, heavy gold brush number (digits ~13 % H like SENJIN) + red 擊破 seal stamp */
   #hud .h-mile { left: 0; right: 0; top: 33%; text-align: center; opacity: 0; }
   #hud .h-mile b { display: inline-block; font: 700 15rem/1 var(--brush); --rw: 1rem; --ew: .3rem; --hi: #fffdf0; --mid: #ffdc6a;
     vertical-align: middle; }
