@@ -1,4 +1,4 @@
-// Zhao Yun moveset (data only). All timings in 60 Hz sim frames.
+// the vanguard moveset (data only). All timings in 60 Hz sim frames.
 //
 // move = {
 //   frames      total duration
@@ -10,7 +10,7 @@
 //   next        normal-attack follow-up, charge: charge-attack branch (C2..C6 hang off N1..N5)
 //   cancel      frame from which a buffered attack/charge (or jump) starts the next move — the beat of the string
 //   branch      N1–N5: frame from which a buffered charge starts the Cn branch — right after the strike, cutting the
-//               follow-through (DW8XL: N1 trail f163–166 → C2 flash f167, N2 f294–297 → C3 f299, N3 f53–56 → C4 f57)
+//               follow-through (reference build: N1 trail f163–166 → C2 flash f167, N2 f294–297 → C3 f299, N3 f53–56 → C4 f57)
 //   dodgeCancel frame from which dodge cancels the move (also during the wind-up, before the first active frame)
 //   lunge       [[f0, f1, metres, 'lin'?], ...] forward displacement along the facing, eased out (or linear)
 //   steer       frames at the start during which the hero may still turn toward the stick / soft-lock target
@@ -32,15 +32,15 @@
 // Coverage (r4): each arc is the ground footprint of its clip's blade path, not a half disc — N1's chop lands in a narrow
 // wedge front-right, N2 rises right → left, N3 is the widest low sweep, N4 the shoulder sweep, N6 the full spin. Sweeps
 // resolve in blade order (`sweep`), so a normal catches ~3–8 of a packed ring one or two at a time (bench: +1…+4 per
-// swing, DW9 sparks on 1–3 soldiers) and a finisher still clears 15–45.
+// swing, reference build sparks on 1–3 soldiers) and a finisher still clears 15–45.
 //
 // Timing targets (bench/BENCHMARK.md, combo-system): N1–N6 hit onsets 25, 26, 24, 26 sf apart, then the late N6 accent
-// 35 sf after N5 (DW8XL audio onsets 26, 28, 22, 26, 34), with a held finish pose. Onset spacing = cancel_k + tell_k+1 −
+// 35 sf after N5 (reference build audio onsets 26, 28, 22, 26, 34), with a held finish pose. Onset spacing = cancel_k + tell_k+1 −
 // tell_k; light moves absorb their hitstop into the beat (combo.js beatOk), so the spacing is the same in an empty field
 // and a packed ring. First active 8 sf after input from idle (5 sf chamber + hold); ~4.5 m travel over the
 // string, surging on N2/N4/N6. Charges: tell (charge start → first active) C1 25, C2 16, C3 13, C4 24, C5 24, C6 10.
 // Charges are a commitment, not a flick (bench/notes/charge-attacks.md): tell → strike → HELD pose → delayed ground wave
-// → recovery, so start → idle incl. hitstop lands in the ±20 % band of DW8XL: C1 64, C2 126 (vault apex ≈ 3 m),
+// → recovery, so start → idle incl. hitstop lands in the ±20 % band of reference build: C1 64, C2 126 (vault apex ≈ 3 m),
 // C3 142 (slam, then the gold pillar ring), C4 86 (bench holds the extension 26 sf), C5 90, C6 168 (plunge, then the eruption).
 // Dash (≈94 sf): three advancing spins ~16 sf apart at run speed, then a lunge thrust. Jump charge: ≈0.5 s apex hang, then a
 // ≤ 2 sf plunge (takeoff → impact 54 sf for any press on the rise). Jump attack: a swipe every 12 sf while hovering.
@@ -131,7 +131,7 @@ export const MOVES = {
     anim: [[0, 0], [4, 0.2], [9, 0.42], [22, 1]],
     hits: [{ f: [5, 9], every: ONCE, shape: 'arc', range: 3.6, ang: 220, dmg: 12, kb: 'flinch', force: 3, hitstop: 2, yMax: 4.5 }] },
   // Jump charge: raise the spear (tell) while the jump finishes its own rise (combo holds frame hang[0] until the apex),
-  // hang ≈ 26 sf at the apex, plunge in ≤ 3 sf, shockwave on landing, crouch (bench: DW8 A→Y apex 1.3–1.6 H at ≈ 27 sf,
+  // hang ≈ 26 sf at the apex, plunge in ≤ 3 sf, shockwave on landing, crouch (bench: reference build A→Y apex 1.3–1.6 H at ≈ 27 sf,
   // hangs 12 f@30 (24 sf), 1-frame plunge, takeoff → impact 0.92 s)
   // integration r2: locomotion-dodge's apex hang + fast plunge, combo-system's post-impact crouch length
   jc: { frames: 56, air: true, hover: 3, landFrame: 36, hang: [6, 32], plunge: [32, -80], cancel: 50, dodgeCancel: 39, steer: 12, armor: true,
@@ -140,7 +140,7 @@ export const MOVES = {
 
 // Re-used by the combo system: what C1 hangs off (charge from neutral).
 export const NEUTRAL = { attack: 'n1', charge: 'c1', dash: 'dash', air: 'jatk', airCharge: 'jc' };
-export const AIR_CHAIN_MAX = 10;  // swipes per jump (the rapid DW8 jump attack shows ~10 over 2.9 s; locomotion-dodge r2: 8 → 10)
+export const AIR_CHAIN_MAX = 10;  // swipes per jump (the rapid reference build jump attack shows ~10 over 2.9 s; locomotion-dodge r2: 8 → 10)
 
 for (const [id, m] of Object.entries(MOVES)) {
   m.id = id; m.clip = m.clip || id; m.lunge = m.lunge || [];
