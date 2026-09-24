@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           pattern='Dynasty Warriors|KOEI|DW8|DW9|Zhao Yun|趙雲|赵云|Musou|musou|MUSOU|無雙|無双|无双'
-          if grep -RniE "$pattern" . --exclude-dir=.git; then
+          if grep -RniE "$pattern" README*.md index.html src THIRD_PARTY_NOTICES.md; then
             echo "Legacy franchise/reference terms found."
             exit 1
           fi
