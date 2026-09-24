@@ -7,9 +7,9 @@
 //  chorus · reinforcement horn + army roar · foreground army shouts ·
 //  looping distant-battle bed, war drums and a power-chord battle riff (music=0 drops it) that swell with combat
 //  intensity and duck under hits and the Surge.
-// Mix: sfx / voice / bed buses + convolution reverb send → master EQ (matched to the benchmark clips' octave balance) →
+// Mix: sfx / voice / bed buses + convolution reverb send → master EQ (matched to SENJIN's internal mix target) →
 // compressor (25 ms attack: transients pass) → soft-clip ceiling (≈ -2 dBFS, no clipping); ≈ -17 LUFS in crowd-fight
-// (benchmark -14 … -19). Impacts own the transient: every hit tick sidechains the whooshes / body falls (under bus), the
+// (target range -14 … -19). Impacts own the transient: every hit tick sidechains the whooshes / body falls (under bus), the
 // bed, the voices and the reverb return for 50-100 ms — through to the next tick inside a multi-tick window, which builds
 // to a heavier last blow — and flurry whoosh pulses land ON their ticks, so multi-tick moves (C3, C4, C6, the Surge
 // flurry) read as separate blows instead of a plateau.
@@ -22,7 +22,7 @@ import { buildBank, makeIR, noiseBuf } from './bank.js';
 const rnd = (a, b) => a + (b - a) * Math.random();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Sim frames a swing cue precedes its hitbox window, per whoosh kind: the trail shows from f0-3 and each whoosh must be
-// audible 2-4 sf before it (benchmark). Bank whooshes fade in: audible ≈ 1.5 frames in for a thrust, ≈ 3.5 for a slash,
+// audible 2-4 sf before it (SENJIN timing target). Bank whooshes fade in: audible ≈ 1.5 frames in for a thrust, ≈ 3.5 for a slash,
 // ≈ 6 for a spin or a heavy swing (peaks ≈ 3 / 6.5 / 8-16 / 12 frames in). The kiai starts KIAI_LEAD frames ahead.
 // Cues that fall on the move's first frame fire from attack:start (no rAF lag).
 const LEAD = { thrust: 7, slash: 9, spin: 11, heavy: 12 }, KIAI_LEAD = 7;
@@ -71,7 +71,7 @@ export function createAudio(game) {
     clip.curve = c; clip.oversample = '2x';
     mix = ctx.createGain(); mix.gain.value = MIX;
     post = ctx.createGain(); post.gain.value = POST;
-    // master EQ, matched to the benchmark clips' octave balance: less thump (63-125 Hz ran 2 dB hot), less 250 Hz mud,
+    // master EQ, matched to SENJIN's internal mix target: less thump (63-125 Hz ran 2 dB hot), less 250 Hz mud,
     // more 500 Hz body and 2-6 kHz bite (500 Hz-4 kHz ran 1.5-3 dB shy), a softer top above 12k
     const eq = [['lowshelf', 140, 0.7, -4], ['peaking', 260, 1, -1], ['peaking', 560, 0.9, 2.5], ['peaking', 3600, 0.7, 3.5], ['highshelf', 12000, 0.7, -3]].map(([type, f, q, g]) => {
       const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; b.gain.value = g; return b;
