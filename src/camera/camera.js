@@ -2,7 +2,7 @@
 // once, eased, toward the fight when the view has lost it while he attacks (never while idle, hurt, running or after a
 // manual look) and otherwise holds still, and an input frame lock (the stick keeps the frame it was pressed in), so the
 // view can swing without bending his path.
-// Render side: reference build-style low third-person follow (hero ≈ 45 % of frame height, feet near the bottom, rigid position
+// Render side: SENJIN tuning-style low third-person follow (hero ≈ 45 % of frame height, feet near the bottom, rigid position
 // follow with velocity lead), combat framing (pull out and tilt up slightly in dense crowds so the castle skyline stays in frame, slight aim bias toward the
 // nearby mob, hero held near the centre), a clean see-through cutout where soldiers stand between lens and hero
 // (occlusion.js), event-driven micro-kicks only on heavy hits (none on normal hits) and Surge choreography.
@@ -13,9 +13,9 @@ import { ST } from '../crowd/crowd.js';
 import { FADE } from './occlusion.js';
 
 const DEG = Math.PI / 180;
-const BLEND = 0.45;                                   // s, Surge → gameplay blend (bench: 0.3-0.6 s, no pop)
+const BLEND = 0.45;                                   // s, Surge → gameplay blend (tuning target: 0.3-0.6 s, no pop)
 export const CAM = {
-  // Default rig from bench/notes/camera-hud-world.md (reference build): vFOV 40°, ≈4.9 m behind and 2.9 m above the feet, pitch
+  // Default rig from internal tuning notes (SENJIN tuning): vFOV 40°, ≈4.9 m behind and 2.9 m above the feet, pitch
   // ≈14.6°, aim crossing the hero at 1.62 m → hero ≈ 45 % of frame height, feet ≈ 89 %, horizon ≈ 14 %.
   dist: 5.06, height: 1.62, pitch: 14.6 * DEG, fov: 40,
   follow: 18, followY: 20,  // position follow rates (1/s): re-centres in ≈0.2 s; a velocity lead removes the run lag
@@ -35,7 +35,7 @@ export const CAM = {
   biasR: 8, biasMax: 0.18,  // aim bias toward the nearby mob: radius (m), max lateral shift (m) → hero stays at x 47-53 %
   leadYMax: 2, leadYRate: 45, // aerial vertical lead: cap (m) and smoothing (1/s): the jump-charge plunge pans ≤ 56 px/frame, feet in frame
   cutR: 0.62, cutEdgePx: 5, // see-through window around the hero (occlusion.js): capsule radius (m), dithered rim (px)
-  kickMaxPx: 4,             // shake ceiling at 720p (bench: ≤ 4 px, finishers only)
+  kickMaxPx: 4,             // shake ceiling at 720p (tuning target: ≤ 4 px, finishers only)
   cutJump: 40,              // hero moved faster than this (m/s, ≥ 1 m) between two renders: teleport → hard cut (dodge 22)
 };
 
