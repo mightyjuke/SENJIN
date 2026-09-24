@@ -2,10 +2,10 @@
 // once, eased, toward the fight when the view has lost it while he attacks (never while idle, hurt, running or after a
 // manual look) and otherwise holds still, and an input frame lock (the stick keeps the frame it was pressed in), so the
 // view can swing without bending his path.
-// Render side: DW8-style low third-person follow (hero ≈ 45 % of frame height, feet near the bottom, rigid position
+// Render side: reference build-style low third-person follow (hero ≈ 45 % of frame height, feet near the bottom, rigid position
 // follow with velocity lead), combat framing (pull out and tilt up slightly in dense crowds so the castle skyline stays in frame, slight aim bias toward the
 // nearby mob, hero held near the centre), a clean see-through cutout where soldiers stand between lens and hero
-// (occlusion.js), event-driven micro-kicks only on heavy hits (none on normal hits) and Musou choreography.
+// (occlusion.js), event-driven micro-kicks only on heavy hits (none on normal hits) and Surge choreography.
 // Render smoothing uses sim time elapsed between renders and shake uses sim frames, so captures are deterministic.
 import * as THREE from 'three';
 import { on } from '../core/events.js';
@@ -13,9 +13,9 @@ import { ST } from '../crowd/crowd.js';
 import { FADE } from './occlusion.js';
 
 const DEG = Math.PI / 180;
-const BLEND = 0.45;                                   // s, Musou → gameplay blend (bench: 0.3-0.6 s, no pop)
+const BLEND = 0.45;                                   // s, Surge → gameplay blend (bench: 0.3-0.6 s, no pop)
 export const CAM = {
-  // Default rig from bench/notes/camera-hud-world.md (DW8): vFOV 40°, ≈4.9 m behind and 2.9 m above the feet, pitch
+  // Default rig from bench/notes/camera-hud-world.md (reference build): vFOV 40°, ≈4.9 m behind and 2.9 m above the feet, pitch
   // ≈14.6°, aim crossing the hero at 1.62 m → hero ≈ 45 % of frame height, feet ≈ 89 %, horizon ≈ 14 %.
   dist: 5.06, height: 1.62, pitch: 14.6 * DEG, fov: 40,
   follow: 18, followY: 20,  // position follow rates (1/s): re-centres in ≈0.2 s; a velocity lead removes the run lag
@@ -105,7 +105,7 @@ export function createCamSim() {
     // a manual look also holds re-frames off for lookHold frames after the stick is let go (the player's view wins)
     if (inp.orbit) { s.yaw += inp.orbit; s.ctrl += inp.orbit; s.manualT = 90; s.look = true; s.seek = false; s.seekV = 0; s.seekCd = CAM.lookHold; }
     else if (s.manualT > 0) s.manualT--;
-    else if (h.state === 'musou') { s.yaw += wrap(h.yaw - s.yaw) * 0.08; s.seek = false; s.seekV = 0; }   // Musou chase: end up behind him
+    else if (h.state === 'surge') { s.yaw += wrap(h.yaw - s.yaw) * 0.08; s.seek = false; s.seekV = 0; }   // Surge chase: end up behind him
     else {
       // Fight-aware yaw: while he attacks and the view shows under half the soldiers the best view around him would
       // (stick released since the press; else only when it shows almost none of the fight: he ran past the mob), the
@@ -164,9 +164,9 @@ export function createCameraRig(game, width, height) {
   on('hits', (e) => { if (e.heavy) kick(Math.min(3, 1.6 + e.count * 0.12), 0.25, 1, 6); });   // finishers only
   on('hero:hurt', (e) => kick(e.armored ? 0.6 : 1.5, 1, 0.3, e.armored ? 4 : 6));
   on('land', (e) => e.hard && kick(2, 0, 1, 6));
-  on('musou:burst', () => kick(4, 0.3, 1, 10));
-  on('musou:start', (e) => { cine = { kind: 'musou', start: game.frame, act: e.activation, burst: e.burstAt, dur: e.dur, yaw: e.yaw, phase: -1 }; });
-  on('musou:end', () => { cine = null; blend = BLEND; });                  // eased blend back to the gameplay rig
+  on('surge:burst', () => kick(4, 0.3, 1, 10));
+  on('surge:start', (e) => { cine = { kind: 'surge', start: game.frame, act: e.activation, burst: e.burstAt, dur: e.dur, yaw: e.yaw, phase: -1 }; });
+  on('surge:end', () => { cine = null; blend = BLEND; });                  // eased blend back to the gameplay rig
   on('scenario', () => { snap = true; cine = null; blend = 0; pull = bias = leadYs = 0; kicks.length = 0; });
 
   /** Nearby-crowd stats around the hero (render-side read of sim arrays): count within crowdR and lateral pull. */
@@ -197,9 +197,9 @@ export function createCameraRig(game, width, height) {
       const cfg = CAM;
       let camYaw = game.cam.yaw;
       let dist = cfg.dist, pitch = cfg.pitch, fov = cfg.fov, height = cfg.height, side = 0, shakeK = 1;
-      // Musou choreography is owned by the musou part: game.musou.shot() returns the shot for the current musou
+      // Surge choreography is owned by the surge part: game.surge.shot() returns the shot for the current surge
       // frame (pose → close-up → chase → payoff); a new shot id is a hard cut. `side` shifts the aim to screen-right.
-      const shot = cine && game.musou.shot && game.musou.shot();
+      const shot = cine && game.surge.shot && game.surge.shot();
       if (shot) {
         if (shot.id !== cine.phase) { cine.phase = shot.id; snap = true; }
         ({ yaw: camYaw, dist, pitch, fov, height, side, shake: shakeK } = shot);
@@ -225,7 +225,7 @@ export function createCameraRig(game, width, height) {
         blend = Math.max(0, blend - dt);
         bk = rest > 0 ? 1 - smooth(0, BLEND, blend) / rest : 1;
       }
-      const lat = shot ? side : bias;                                      // musou shot: its own screen-right offset
+      const lat = shot ? side : bias;                                      // surge shot: its own screen-right offset
       // velocity lead v/follow cancels the exponential follow's steady lag (≈0.47 m at a run): the running hero stays
       // centred and the camera backs off in time when he runs at it (lunges and rolls still ease in)
       const lead = shot ? 0 : 1 / cfg.follow, lift = shot ? 0.6 : CAM.airLift;
@@ -260,7 +260,7 @@ export function createCameraRig(game, width, height) {
         const a = k.px * Math.exp(-age * 3 / k.len) * Math.cos(age * Math.PI / 3);
         sx += a * k.dirX; sy += a * k.dirY;
       }
-      sx *= shakeK; sy *= shakeK;                                          // musou shots scale the thumps
+      sx *= shakeK; sy *= shakeK;                                          // surge shots scale the thumps
       const m = Math.hypot(sx, sy);
       if (m > CAM.kickMaxPx) { sx *= CAM.kickMaxPx / m; sy *= CAM.kickMaxPx / m; }
       if (m > 0) {
