@@ -1,84 +1,33 @@
 [English](README.md) | [简体中文](README.zh-CN.md) | **日本語**
 
-# Voxel Musou — 趙雲
+# SENJIN — 先陣
 
-<p align="center">
-  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="趙雲 vs 魏兵 300 人——無双乱舞" width="100%"></a>
-</p>
+SENJIN は Three.js で作られた、ブラウザで遊べるボクセル戦場アクションのプロトタイプです。先陣を切る戦士として大軍の陣形を突破し、敵将を倒し、Surge ゲージを溜めて広範囲の必殺技を発動します。
 
-<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ ブラウザで今すぐプレイ — voxel-musou.vercel.app</a></b></p>
-
-| | |
-| --- | --- |
-| ![乱戦、400 ヒット超えの連撃](media/crowd.jpg) | ![チャージ攻撃の薙ぎ払い](media/sweep.jpg) |
-| 乱戦、400 ヒット超えの連撃 | チャージ攻撃の薙ぎ払い |
-| ![無双カットイン](media/musou.jpg) | ![無双の龍、150 撃破](media/dragon.jpg) |
-| 無双カットイン | 無双の龍、150 撃破 |
-
-ブラウザで遊べる、『真・三國無双』風のボクセルアクションゲームです。Three.js で制作しています。趙雲となり、槍を手に数百の魏軍兵士をなぎ倒しましょう。
-
-ビルド不要：素の ES モジュール構成で、Three.js r186 は `vendor/three/` に同梱。シミュレーションは固定 60 Hz の決定論的ステップで動作します。
+本作の戦場・人物・演出はオリジナルの架空設定です。第三者の商用ゲーム作品に由来するキャラクター名、アート、音声、ロゴ、物語素材、ゲームアセットは使用しません。
 
 ## 特徴
 
-- 流れるような通常攻撃コンボ（N1–N6）とチャージ攻撃（C1–C6）
-- ジャンプ、ジャンプ攻撃、回避
-- ヒットストップとヒットエフェクト
-- 密集するボクセルの魏軍兵士（約 300 体、InstancedMesh）がボクセル片となって吹き飛ぶ
-- 名前と体力ゲージを表示する敵武将
-- 龍の演出と画面カラーグレーディングを伴う無双乱舞
-- 炎と軍旗がはためく、夕暮れの城塞戦場
-- 独自のポストプロセス：大気のかすみ、被写界深度、ブルーム、レトロなピクセル表現
-- WebAudio によるプロシージャルサウンド
-- 書道風 HUD
+- 通常連撃、チャージ攻撃、ジャンプ攻撃、回避を備えたポールアーム戦闘
+- `InstancedMesh` による数百体規模のボクセル敵兵
+- 体力ゲージ付きの敵将
+- Surge ゲージとシネマティックな Surge 必殺技
+- プロシージャルな戦場、城郭、炎、旗、VFX
+- ダウンロード音源を使わない WebAudio のプロシージャル音響
+- 固定 60 Hz の決定論的シミュレーション
+- ビルド不要の ES Modules 構成
 
-## 起動方法
-
-ES モジュールは `file://` から読み込めないため、任意の静的サーバーでフォルダを配信してください。
+## 起動
 
 ```sh
 python3 -m http.server 8000
 ```
 
-その後 http://localhost:8000 を開きます。WebGL2 対応ブラウザが必要で、デスクトップ GPU を推奨します。サウンドは最初のキー入力またはクリックで開始します。
+`http://localhost:8000` を開いてください。WebGL2 対応ブラウザが必要です。
 
-## 操作方法
+## ライセンス
 
-キーボードとマウスで操作します。ゲームパッドにも対応しています。
-
-| 操作 | キー |
-| --- | --- |
-| 移動（カメラ基準） | WASD / 矢印キー |
-| 通常攻撃 | J / 左クリック |
-| チャージ攻撃 | K / 右クリック |
-| ジャンプ | スペース |
-| 回避 | L / Shift |
-| 無双乱舞 | I |
-| カメラ回転 | マウスドラッグ / Q E |
-| ポーズ / 操作説明 | Esc |
-| スタート | Enter /「出陣」をクリック |
-
-![タイトル画面と操作説明](media/title.jpg)
-
-## オプション
-
-| URL パラメータ | 説明 |
-| --- | --- |
-| `?enemies=N` | 敵兵の数、0–2000（既定値 300） |
-
-## ディレクトリ構成
-
-```
-index.html      エントリーポイント、importmap、HUD の CSS
-src/            core、hero、combat、crowd、musou、camera、vfx、post、world、audio、ui
-vendor/three/   Three.js r186
-media/          README 用スクリーンショットと GIF
-```
-
-## クレジットとライセンス
-
-- コード：MIT ライセンス。[LICENSE](LICENSE) を参照。
-- [three.js](https://threejs.org/)：MIT ライセンス。
-- HUD の代替フォント `src/ui/brush.woff2` は、Kinuta Font Factory による Yuji Boku のサブセットで、SIL Open Font License 1.1 で提供されています。
-
-本作はファンプロジェクトであり、KOEI TECMO とは一切関係がなく、同社の承認を受けたものでもありません。「真・三國無双（Dynasty Warriors）」は KOEI TECMO の商標です。原作ゲームのアセットは一切含まれていません。
+- オリジナルコード: MIT — [LICENSE](LICENSE)
+- Three.js: MIT — [LICENSES/three.js-MIT.txt](LICENSES/three.js-MIT.txt)
+- `src/ui/brush.woff2`: Yuji Boku subset / SIL Open Font License 1.1 — [LICENSES/Yuji-Boku-OFL-1.1.txt](LICENSES/Yuji-Boku-OFL-1.1.txt)
+- 詳細: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
