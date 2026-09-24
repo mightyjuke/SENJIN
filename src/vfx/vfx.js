@@ -140,7 +140,7 @@ const TRAIL_FS = /* glsl */`
     vec3 nrm = cross(dFdx(vView), dFdy(vView));
     float facing = abs(dot(nrm, normalize(vView))) / max(length(nrm), 1e-20);
     float graze = 1.0 - smoothstep(0.25, 0.7, facing);            // 0 face-on arc .. 1 flat spin seen edge-on
-    float life = 1.0 - pow(age, 1.0 + 1.3 * graze);                // a spin holds its whole turn: the benchmark's full disc
+    float life = 1.0 - pow(age, 1.0 + 1.3 * graze);                // a spin holds its whole turn: SENJIN's full-disc target
     float band = floor(v * 14.0);                                  // voxel-stepped bands across the ribbon
     float vq = (band + 0.5) / 14.0;
     float lq = floor(life * 6.0 + 0.999) / 6.0;                    // stepped fade along the ribbon
@@ -235,7 +235,7 @@ const STAR_FS = /* glsl */`
   void main() {
     float u = vF.x, a = vF.y * 6.2832;
     if (vF.z > 0.5) {
-      // contact burst (benchmark SENJIN tuning f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
+      // contact burst (SENJIN tuning f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
       // spikes of random length, white-hot at the root and red-orange at the tip, shooting out and detaching from the
       // core as they age, over a short red-orange fireball; pixel-stepped so it stays a crisp retro sprite under bloom
       vec2 p = floor(vP * 18.0 + 0.5) / 18.0;
@@ -663,7 +663,7 @@ export function createVfx(scene, game, world) {
     // surge part r2: the Surge lands ~100 hits in 0.4 s; at the normal budget their sparks + stars bloomed into a white
     // cloud over the launch fan, so surge hits get a tighter one (the surge view draws the payoff light itself)
     const mh = e.move === 'surge';
-    // benchmark contact spark: 1-2 BH across, ≤ 8 sf, radial streaks round a white core; heavy hits a size up
+    // SENJIN contact spark: 1-2 BH across, ≤ 8 sf, radial streaks round a white core; heavy hits a size up
     // (the first few struck soldiers of a frame get the full burst, the rest a small one, so a sweep does not fog white)
     // r4: the first 6 struck soldiers of a frame get the full 1-2 H burst (star spikes ≈ 1.6-1.9 m radius + 14-18
     // needles ≈ 1-1.5 m long, starting on the camera side of the body), 7-12 a half-size one, the rest today's speck
@@ -706,7 +706,7 @@ export function createVfx(scene, game, world) {
   on('land', (e) => { dustPuff(e.x, e.z, e.hard ? 9 : 5, 2.4, 0.4); dustRing(e.x, e.z, e.hard ? 12 : 9, 0.35, e.hard ? 4.5 : 3.2, 0.42, 0.5); });
   on('hero:hurt', (e) => e.armored ? star(e.x, e.y, e.z, 0.45, 0.06, [1.6, 0.5, 0.3]) : star(e.x, e.y, e.z, 0.9, 0.1, [2.4, 0.5, 0.3]));
 
-  // Heavy windows open → finisher volume. Charge finishers get their benchmark identity (charge-attacks notes):
+  // Heavy windows open → finisher volume. Charge finishers get their SENJIN identity:
   // C3 gold pillar ring (after the dark smoke arc, see afterStep), C5 fan of blue-white shafts from the ground,
   // C6 rock eruption inside a 2.5 H dust wall, jump charge a small quake; the rest is shaped by the hitbox.
   const GOLD = [1.5, 0.72, 0.2], SHAFT = [0.28, 0.52, 0.92];
@@ -873,8 +873,8 @@ export function createVfx(scene, game, world) {
     if (prev && prev.rt.distanceToSquared(tipNow) < 1e-6) { prev.c = clock; return; }
     // only a fast tip leaves a ribbon: wind-ups and holds (< ≈ 5 m/s) draw nothing, so no slow "flag" hangs on the spear
     smp.g *= THREE.MathUtils.smoothstep(prev ? prev.rt.distanceTo(tipNow) : 0, 0.08, 0.3);
-    // flat sweeps (swept surface ≈ horizontal: N3 low sweep, N4 / C4 / dash spins) widen into the benchmark's disc:
-    // the ribbon reaches in toward the hands and ≈ 1.2 m past the tip (C4 disc ≈ 2 H radius, BENCHMARK reconciled #3)
+    // flat sweeps (swept surface ≈ horizontal: N3 low sweep, N4 / C4 / dash spins) widen into SENJIN's full-disc silhouette:
+    // the ribbon reaches in toward the hands and ≈ 1.2 m past the tip (C4 disc ≈ 2 H radius, SENJIN tuning pass)
     let flat = prev ? prev.flat : 0;
     if (prev) {
       _d.subVectors(tipNow, prev.rt).cross(_sd.subVectors(tipNow, baseNow));
