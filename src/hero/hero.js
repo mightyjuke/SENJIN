@@ -66,7 +66,7 @@ export function createHero(game) {
     if (h.comboT > 0 && --h.comboT === 0) h.combo = 0;
     if (h.surgeBuf > 0) h.surgeBuf--;
     if (h.state === 'surge') game.surge.stepHero(inp);
-    // surge part r3: one full gauge segment is enough (game.surge.ready; one Surge spends one of the 3 segments)
+    // surge part r3: one full gauge segment is enough (game.surge.ready; one Surge spends one of the four segments)
     else if (h.surgeBuf && game.surge.ready() && h.grounded && h.state !== 'hurt') { h.surgeBuf = 0; game.surge.start(inp); }
     else if (!stepCombo(h, inp, game)) stepLocomotion(h, inp, game.cam.yaw);
     if (stepPhysics(h) && h.state === 'jump') setState(h, 'land');
