@@ -1,4 +1,4 @@
-// Voxel Zhao Yun (concept: bench/concept.png). Every part is authored in voxel units, rasterised into a grid and meshed
+// Voxel the vanguard (concept: bench/concept.png). Every part is authored in voxel units, rasterised into a grid and meshed
 // with exposed faces only plus per-vertex ambient occlusion (lamellar gaps, folds and seams darken). One mesh per rig
 // joint. White-silver lamellar armour in overlapping plate rows (dark seams) over a gunmetal underlayer, a white scale mantle, flared
 // three-tier pauldrons, teal trim, headband with a silver plate, dark banded spear with a gold dragon collar.
@@ -11,15 +11,15 @@ import { shade } from '../core/voxel.js';
 export const V = 0.025;          // body voxel (m); spear 0.02/0.012, blade 0.011
 export const HV = 0.0175;        // head voxel: 13-voxel head ≈ 0.23 m (× HERO_SCALE) → ≈ 7.5 heads tall
 export const C = {
-  W: 0xdcdee2, W2: 0xb4b9c2, Wh: 0xeeefee, S: 0xa6aeba, Sd: 0x6a717e,                      // white-silver armour, silver
-  G: 0x3a3a44, Gd: 0x2a2a32, Gm: 0x50525e, Gl: 0x8a8e9a,                                   // gunmetal underlayer, dark scale
-  T: 0x1f9c95, Td: 0x136b68, Tl: 0x3fc4b8,                                                   // teal
+  W: 0x4b4e54, W2: 0x36393f, Wh: 0x676b72, S: 0x9a8f7d, Sd: 0x514a40,                      // charcoal armour, weathered steel
+  G: 0x292a2e, Gd: 0x1b1c20, Gm: 0x3c3e44, Gl: 0x777b82,                                   // dark underlayer
+  T: 0xa9362f, Td: 0x6c211d, Tl: 0xd25a49,                                                   // crimson accent
   gold: 0xd4a84c, leather: 0x6b4a33, glove: 0x3b2c27, sole: 0x2a2226,
   skin: 0xf1caa9, skinD: 0xd8a488, lip: 0xcc8c78, eye: 0x17121a, iris: 0x3b2a2c, scl: 0xd4ccc6,
   hair: 0x16131a, hairH: 0x363245, hairT: 0x241f2a,
   shaft: 0x1d1e26, shaftH: 0x30323e, band: 0x6b707c,
-  blue: 0x2a78e0, blueH: 0x78c8ff, blueD: 0x1c4aa8, ribbon: 0x8ccbe8, ribbonD: 0x5c9ccc,
-  cape: 0xebe6dc, capeD: 0xd6d0c4, emb: 0x2f5fa6,
+  blue: 0x9f302b, blueH: 0xe06a50, blueD: 0x5d1d1a, ribbon: 0xb5483d, ribbonD: 0x762b25,
+  cape: 0x3d3434, capeD: 0x292426, emb: 0xb54638,
 };
 
 // ---------------------------------------------------------------- voxel mesher with AO
@@ -225,7 +225,7 @@ function head() {
     B([5, 0, 1], [6, 6, 4], (x, y, z) => (y === 0 && z % 2 ? null : C.hair)),
     B([-4, 7, 5], [5, 12, 6], (x, y) => (y >= bangs[x] ? hairPaint(x, y, 5) : null)),   // spiky fringe
     B([-2, 12, 5], [3, 14, 7], C.hair), B([-3, 14, -2], [0, 15, 2], C.hair), B([2, 14, -4], [4, 15, 0], C.hair),
-    // headband (dark teal) with a silver plate and gold gem
+    // low-profile crimson forehead guard with a weathered metal plate
     B([-6, 9, -7], [7, 10, 7], C.Td),
     B([-1, 8, 6], [2, 11, 7], C.S),
     B([0, 9, 7], [1, 10, 8], C.gold),
@@ -254,20 +254,15 @@ function spearGeo() {
     B([-2, -2, -38], [2, 2, -35], C.S),
     B([-1, -1, -41], [1, 1, -38], C.S),
   ], sv, { jitter: 0.04, ao: 0.3 });
-  // gold dragon-head collar at 0.012 (z 1.44 … 1.62): ring, head, jaws, swept-back horns, teal eyes, whiskers
+  // Abstract hexagonal guard and crimson tassel root; intentionally avoids animal or franchise-specific motifs.
   const cv = 0.012;
   const collar = vox([
-    B([-3, -3, 120], [3, 3, 123], C.gold),
-    B([-4, -3, 123], [4, 4, 130], (x, y, z) => ((z + y) % 3 === 0 ? shade(C.gold, 0.8) : C.gold)),
-    B([-3, 1, 130], [3, 4, 135], C.gold),                            // upper jaw
-    B([-3, -3, 130], [3, -1, 133], shade(C.gold, 0.85)),             // lower jaw
-    B([-3, 4, 121], [-1, 6, 126], C.gold), B([1, 4, 121], [3, 6, 126], C.gold),
-    B([-3, 5, 117], [-1, 7, 121], shade(C.gold, 0.9)), B([1, 5, 117], [3, 7, 121], shade(C.gold, 0.9)),
-    B([-5, 1, 127], [-4, 3, 129], C.Tl), B([4, 1, 127], [5, 3, 129], C.Tl),
-    B([-6, 0, 131], [-3, 1, 132], C.gold), B([3, 0, 131], [6, 1, 132], C.gold),
-    // bushy blue tassel root ring under the collar
+    B([-4, -4, 120], [4, 4, 123], C.gold),
+    B([-5, -2, 123], [5, 2, 128], (x, y, z) => (((x + z) & 1) ? shade(C.gold, 0.82) : C.gold)),
+    B([-3, -3, 128], [3, 3, 132], C.Sd),
+    B([-2, -5, 124], [2, 5, 127], C.T),
     B([-4, -4, 116], [4, 4, 120], (x, y, z) => (hash01(x, y, z) < 0.25 ? null : hash01(y, z, x) < 0.3 ? C.blueH : C.blue)),
-  ], cv, { jitter: 0.05, ao: 0.35 });
+  ], cv, { jitter: 0.04, ao: 0.35 });
   return [shaft, collar];
 }
 
