@@ -4,7 +4,7 @@
 //    white blob). Then a warm wash is blended into the lit albedo (≤ 0.22, so the soldiers stay dark), with a bright
 //    emissive rim on the faces that turn away from the camera (the silhouette edges). It decays quadratically over
 //    ≈ 10 sf: gold on a hit, deep amber on a heavy hit, red on the killing blow
-//    (the DW8 yellow / red-pink wash). Weapons stay untinted (crowd/view.js zeroes the glow for them). Red tints also
+//    (the reference build yellow / red-pink wash). Weapons stay untinted (crowd/view.js zeroes the glow for them). Red tints also
 //    glow flat and KO'd bodies keep a red ember while airborne, so the blow-away fans read over a dark crowd. The hero
 //    stays the lightest large mass (hero luma ≈ 1.3-1.6× the tinted soldiers in combo-normal).
 // 2. Recoil pose (recoilPose): the DW flinch. A struck soldier snaps its head back and throws its arms up and back
