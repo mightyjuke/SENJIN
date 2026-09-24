@@ -119,7 +119,7 @@ function lamellar(a, b, { base = C.W, rowH = 3, pw = 4, trim = null, jag = false
 // ---------------------------------------------------------------- body parts
 function torso() {
   const P_ = {};
-  // hips (pelvis, narrow): gunmetal core, teal sash + leather belt with the gold buckle, white faulds at the back
+  // hips (pelvis, narrow): gunmetal core, crimson sash + leather belt with the gold buckle, white faulds at the back
   P_.hips = [
     B([-6, -5, -4], [6, 3, 4], C.G),
     B([-7, -1, -5], [7, 2, 5], (x, y) => (md(x + y, 4) === 0 ? C.Td : C.T)),
@@ -128,25 +128,25 @@ function torso() {
     B([5, -4, -2], [8, 1, 2], C.T),                                  // sash knot on the left hip
     ...lamellar([-6, -6, -6], [6, -1, -5], { rowH: 2, lipX: false, trim: C.T, jag: true }),   // back fauld (front: apron chain)
   ];
-  // waist (narrow): gunmetal with grey-white belly lamellar and a teal band under the breastplate
+  // waist (narrow): gunmetal with charcoal belly lamellar and a crimson band under the breastplate
   P_.spine = [
     B([-5, -3, -4], [5, 8, 4], C.G),
     ...lamellar([-5, -1, -4], [5, 6, 4], { base: C.W2, rowH: 2 }),
     B([-6, 6, -5], [6, 8, 5], C.T),
   ];
-  // chest (V taper, broad at the top): white lamellar cuirass, white scale mantle round the neck and shoulders (teal
-  // lining, V opening), silver heart-mirror with a teal gem
+  // chest (V taper, broad at the top): charcoal lamellar cuirass, weathered scale mantle round the neck and shoulders (crimson
+  // lining and V opening, with a simple weathered-steel chest clasp
   P_.chest = [
     B([-7, -2, -5], [7, 9, 5], C.G),
     ...lamellar([-6, -1, -5], [6, 3, 5], { base: C.W2, rowH: 2 }),
     ...lamellar([-7, 3, -5], [7, 8, 5], { base: C.W, rowH: 3, pw: 3 }),
-    B([-1, -1, 6], [1, 5, 7], C.T),                                  // teal centre strip under the mirror
+    B([-1, -1, 6], [1, 5, 7], C.T),                                  // crimson centre strip
     B([-2, 2, 6], [2, 6, 8], C.S),
     B([-1, 3, 8], [1, 5, 9], C.Tl),
     B([-2, 2, 7], [2, 3, 8], C.Sd, true),
     // mantle: shaggy scale tiers, widest at the bottom, reaching over the shoulders
     ...lamellar([-9, 6, -6], [9, 11, 6], { base: C.Wh, rowH: 2, pw: 3, jag: true }),
-    B([-4, 8, -4], [4, 12, 4], C.T),                                 // teal inner collar
+    B([-4, 8, -4], [4, 12, 4], C.T),                                 // crimson inner collar
     B([-3, 8, -3], [3, 13, 3], -1),                                  // neck hole
     B([-2, 6, 3], [2, 12, 8], -1),                                   // V opening at the throat
     B([-2, 5, 3], [2, 10, 5], C.T),
@@ -158,12 +158,12 @@ function torso() {
 
 function limbs(P_) {
   for (const [s, sx] of [['R', -1], ['L', 1]]) {
-    // upper arm: gunmetal sleeve under small white lamellar with a teal hem (pauldron is separate)
+    // upper arm: gunmetal sleeve under small charcoal lamellar with a crimson hem (pauldron is separate)
     P_['upperArm' + s] = [
       B([-2, -12, -2], [2, 1, 2], C.G),
       ...lamellar([-2, -11, -2], [2, -5, 2], { rowH: 2, pw: 3, trim: C.T }),
     ];
-    // forearm: banded white vambrace (plate rows with dark gaps), dark wrist band, teal line, silver elbow cop
+    // forearm: banded steel vambrace (plate rows with dark gaps), dark wrist band, crimson line, steel elbow cop
     P_['foreArm' + s] = [
       B([-2, -11, -2], [3, 0, 3], C.Gd),
       ...lamellar([-2, -9, -2], [3, -2, 3], { rowH: 2, trim: C.S }),
@@ -176,7 +176,7 @@ function limbs(P_) {
       B([-3, -18, -3], [4, 1, 4], (x, y) => (y % 5 === 0 ? C.Gd : C.G)),
       ...lamellar([-2, -9, -4], [5, 2, 5], { rowH: 2, trim: C.T, jag: true }).map((b) => mirX(b, sx, 1)),
     ];
-    // shin: plated greave over the front/sides with a silver ridge and knee cop, teal band, gunmetal calf
+    // shin: plated greave over the front/sides with a steel ridge and knee cop, crimson band, gunmetal calf
     P_['shin' + s] = [
       B([-2, -17, -2], [3, 0, 3], C.G),                               // slim calf, gunmetal wrap
       ...lamellar([-2, -15, -1], [3, -3, 4], { rowH: 3, pw: 4 }),     // greave plates
@@ -185,7 +185,7 @@ function limbs(P_) {
       B([-2, -3, 0], [3, 2, 5], C.S),                                 // knee cop
       B([0, -2, 5], [1, 0, 6], C.T),
     ];
-    // foot: armoured white boot, silver toe cap, dark sole, teal ankle band
+    // foot: armoured charcoal boot, steel toe cap, dark sole, crimson ankle band
     P_['foot' + s] = [
       B([-3, -3, -2], [3, 1, 6], (x, y) => (y === -1 ? C.W2 : C.W)),
       B([-3, -3, 4], [3, -1, 7], C.S),
@@ -228,7 +228,7 @@ function head() {
     B([-6, 9, -7], [7, 10, 7], C.Td),
     B([-1, 8, 6], [2, 11, 7], C.S),
     B([0, 9, 7], [1, 10, 8], C.gold),
-    // silver guan on the crown (holds the ponytail) with a teal gem
+    // low-profile crown clasp that anchors the rear cloth strip
     B([-1, 12, -5], [2, 16, -1], C.S),
     B([0, 14, -1], [1, 15, 0], C.Tl),
     // face: eyes with a catch-light, slanted brows, nose, mouth, cheek shade
