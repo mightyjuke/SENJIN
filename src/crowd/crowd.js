@@ -1,4 +1,4 @@
-// Wei army (sim). Struct-of-arrays for every soldier.
+// Enemy army (sim). Struct-of-arrays for every soldier.
 //  · Squads: the army stands in rectangular blocks led by a 敵 standard-bearer and a captain. A director keeps
 //    ~CROWD.engaged soldiers on the hero: only free soldiers standing in the ring count (+ a third of every block en
 //    route), so a sweep releases the next block at once. It sends the nearest block marching in formation (it wheels
