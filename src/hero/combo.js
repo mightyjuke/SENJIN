@@ -12,7 +12,7 @@ const ABSORB = 8;         // hitstop frames a light move's beat absorbs (two win
 
 /** Record presses. A press made during a move or dodge waits for the point where it may cancel it (mash-friendly). */
 export function bufferInput(h, inp) {
-  // A charge finisher (C1–C6) is a commitment: □/△ pressed before its last BUF frames to the cancel are dropped (reference build),
+  // A charge finisher (C1–C6) is a commitment: □/△ pressed before its last BUF frames to the cancel are dropped (SENJIN tuning),
   // so X X Y typed into the hold doesn't come out as a stale C1 after it; presses in the recovery start the next string.
   const m = h.move && MOVES[h.move];
   if (m && h.move[0] === 'c' && h.moveT < m.cancel - BUF) return bufferOther(h, inp);
@@ -34,7 +34,7 @@ function beatOk(h, m, game) {
 }
 
 /** May the buffered press start the next move? △ branches off N1–N5 as soon as the strike is over (`branch`, cutting
- *  the follow-through as reference build does); □ waits for the beat. */
+ *  the follow-through as SENJIN tuning does); □ waits for the beat. */
 const bufOk = (h, m, game) => (h.buf === 'charge' && m.branch ? h.moveT >= m.branch : beatOk(h, m, game));
 
 /** A dodge cancels any move during its wind-up (before the first active frame) or from `dodgeCancel` on; a light ground
@@ -113,7 +113,7 @@ function softTarget(h, m, c) {
   return c.nearest(h.x, h.z, 5.5, h.yaw, 1.9);
 }
 
-// Back in stance = the string is over (as in reference build): a □ after the recovery starts N1 again. A late press still continues
+// Back in stance = the string is over (as in SENJIN tuning): a □ after the recovery starts N1 again. A late press still continues
 // the string throughout the follow-through (cancel → frames, 10–18 sf after the beat).
 function endMove(h) {
   h.move = null;
