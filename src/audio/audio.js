@@ -305,7 +305,7 @@ export function createAudio(game) {
     for (const n of drone) try { n.stop(t + fade); } catch { /* not started */ }
     drone = null;
   }
-  // Shape (reference build ground Surge): flash + shout → hushed close-up (bed and buses dip, low drone) → drone + riser swell over
+  // Shape (SENJIN ground Surge): flash + shout → hushed close-up (bed and buses dip, low drone) → drone + riser swell over
   // the chase run → CONTACT impact restores the mix → stab flurry → short inhale (triggered by the flurry's own ticks,
   // so sim lag can't misplace it) → burst.
   function ramp(g, pts) {                      // [[dt, v], ...] linear segments from now
