@@ -20,7 +20,7 @@
 //  footstep      loco     {x,y,z, foot, speed, kick?}                   a foot plants in the run (≥2.5 m/s) / out of a dodge roll
 //                                                                       / the dash lunge landing (kick: 1 = a hard plant: dust burst)
 //  hero:hurt     hero     {dmg, hp, x,y,z, armored}
-//  surge:ready   surge    {}               a Surge became available: ≥ 1 of the 3 gauge segments full (edge; r3: one Surge spends one segment)
+//  surge:ready   surge    {}               a Surge became available: ≥ 1 of the four gauge segments full (one Surge spends one segment)
 //  surge:start   surge    {x,y,z, yaw, frame, dur, activation, burstAt, contact, pushed}   dur/activation/burstAt/contact in
 //                                                                       surge frames (end, close-up cut, finisher, first mass hit)
 //  surge:hit     surge    {count, x,y,z, stage, yaw, n}                 one hit tick; stage 'contact' (first mass hit, 2.2 s)
