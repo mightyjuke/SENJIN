@@ -6,7 +6,7 @@ import { emit } from '../core/events.js';
 import { MOVES } from './moves.js';
 
 export const LOCO = {
-  runSpeed: 8.5,        // m/s = 4.6 H/s (DW8 ≈ 4.6 H/s)
+  runSpeed: 8.5,        // m/s = 4.6 H/s (reference build ≈ 4.6 H/s)
   accel: 150,           // m/s²: standstill → top speed in ~3 sim frames (benchmark shows no ramp)
   decel: 60,            // m/s²: release → stop in ~8 frames (short planted skid)
   turnRate: 36,         // rad/s: 180° in 5 sim frames (benchmark ≤ 6)
@@ -15,7 +15,7 @@ export const LOCO = {
   // dive roll: 24 frames (0.40 s) total, run-cancel at 20 (0.33 s), attack at 14, re-dodge at 16
   dodgeFrames: 24, dodgeDist: 4.6, dodgeIFrames: [0, 16], dodgeAttackCancel: 14, dodgeRedodge: 16, dodgeRunCancel: 20,
   jumpV: 12.6, gravity: 28, airControl: 14, hoverG: 0.3,
-  hoverSink: 0.1,       // m/s: an air string holds the apex (DW8: ~10 swings in ~2.4 s at about apex height)
+  hoverSink: 0.1,       // m/s: an air string holds the apex (reference build: ~10 swings in ~2.4 s at about apex height)
   landFrames: 8, landRunCancel: 4, hurtFrames: 20,
 };
 const DT = 1 / 60, TAU = Math.PI * 2;
@@ -25,7 +25,7 @@ const DASH_PLANT = MOVES.dash && MOVES.dash.lunge[1] ? MOVES.dash.lunge[1][0] + 
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/** Run cadence in steps/s for a ground speed (m/s): 5.3 at top speed (DW8), ≈3.4 at a walk. Shared with the pose. */
+/** Run cadence in steps/s for a ground speed (m/s): 5.3 at top speed (reference build), ≈3.4 at a walk. Shared with the pose. */
 export function cadence(v) { return 2.2 + 0.365 * v; }
 
 // Dodge displacement per frame (fraction of dodgeDist): 2-frame push-off, fast dive/roll, long settle into the crouch.
@@ -151,13 +151,13 @@ export function startJump(h) {
 /** Gravity + integration + landing. Returns true on the frame the hero touches down. */
 export function stepPhysics(h) {
   if (h.state !== 'dodge') { h.x += h.vx * DT; h.z += h.vz * DT; }
-  if (h.move === 'dash' && h.moveT === DASH_PLANT && h.grounded) {       // DW8: the lunge thrust lands in a dust cloud
+  if (h.move === 'dash' && h.moveT === DASH_PLANT && h.grounded) {       // reference build: the lunge thrust lands in a dust cloud
     emit('footstep', { x: h.x + Math.sin(h.yaw) * 0.4, y: 0, z: h.z + Math.cos(h.yaw) * 0.4, foot: 'L', speed: LOCO.runSpeed, kick: 1 });
   }
   if (h.grounded) return false;
   const m = h.state === 'attack' && h.move && MOVES[h.move];
   if (m && m.air && !m.landFrame) {
-    // air string (benchmark: DW8 A→X×n hangs at about apex height for ~2.4 s, then a ≈0.4 s spread-arm fall): the jump
+    // air string (benchmark: reference build A→X×n hangs at about apex height for ~2.4 s, then a ≈0.4 s spread-arm fall): the jump
     // finishes its rise on the normal arc, then holds altitude with a slow sink. Each swing's re-lift (combo startMove)
     // is overridden here, so a long string never climbs; when the swings stop, gravity takes over.
     if (!h.airHold && h.vy > 0) h.vy -= LOCO.gravity * DT;
