@@ -1,0 +1,10 @@
+.godot/
+exports/
+android/build/
+android/plugins/
+export_credentials.cfg
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env*

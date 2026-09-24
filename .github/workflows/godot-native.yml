@@ -1,0 +1,82 @@
+name: Godot Native Validation
+
+on:
+  push:
+    branches: [main, 'port/godot-mobile']
+    paths: ['godot/**', '.github/workflows/godot-native.yml']
+  pull_request:
+    paths: ['godot/**', '.github/workflows/godot-native.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GODOT_VERSION: 4.7.2
+      GODOT_SILENCE_ROOT_WARNING: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot and software renderer
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          mkdir -p artifacts
+      - name: Import and parse native project
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/import.log; then exit 1; fi
+      - name: Native regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 godot --headless --path godot --script res://tests/run.gd 2>&1 | tee artifacts/tests.log
+          grep -q SENJIN_TESTS_PASS artifacts/tests.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/tests.log; then exit 1; fi
+      - name: Native menu touch integration
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 1
+        run: |
+          set -euo pipefail
+          timeout 90 xvfb-run -a godot --path godot --audio-driver Dummy --script res://tests/touch_ui.gd 2>&1 | tee artifacts/touch-ui.log
+          grep -q SENJIN_TOUCH_UI_PASS artifacts/touch-ui.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/touch-ui.log; then exit 1; fi
+      - name: Headless gameplay smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 godot --verbose --headless --path godot --audio-driver Dummy -- --smoke 2>&1 | tee artifacts/smoke.log
+          grep -q SENJIN_SMOKE_PASS artifacts/smoke.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/smoke.log; then exit 1; fi
+      - name: Rendered gameplay and touch overlay smoke
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 1
+        run: |
+          set -euo pipefail
+          timeout 180 xvfb-run -a godot --path godot --rendering-method gl_compatibility --audio-driver Dummy -- --smoke --touch "--capture=$PWD/artifacts/native-landscape.png" 2>&1 | tee artifacts/rendered.log
+          grep -q SENJIN_SMOKE_PASS artifacts/rendered.log
+          test -s artifacts/native-landscape.png
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/rendered.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-validation-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: warn

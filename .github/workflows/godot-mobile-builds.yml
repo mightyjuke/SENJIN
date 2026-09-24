@@ -1,0 +1,176 @@
+name: Godot Mobile Builds
+
+on:
+  push:
+    branches: ['port/godot-mobile', main]
+    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml']
+  pull_request:
+    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.2
+  GODOT_SILENCE_ROOT_WARNING: 1
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install matching engine, export templates and Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable" artifacts godot/exports/android
+          unzip -q /tmp/templates.tpz 'templates/android_debug.apk' 'templates/android_release.apk' 'templates/android_source.zip' -d /tmp/templates
+          cp /tmp/templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          manager=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)
+          test -x "$manager"
+          "$manager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.config/godot"
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          text = '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n'
+          text += 'export/android/java_sdk_path = "' + os.environ['JAVA_HOME'] + '"\n'
+          text += 'export/android/android_sdk_path = "' + os.environ['ANDROID_HOME'] + '"\n'
+          (Path.home()/'.config/godot/editor_settings-4.7.tres').write_text(text)
+          PY
+          keytool -genkeypair -noprompt -keystore /tmp/senjin-debug.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+      - name: Export and verify debug APK
+        shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /tmp/senjin-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/android-import.log
+          godot --headless --path godot --export-debug 'Android Debug' 2>&1 | tee artifacts/android-export.log
+          test -s godot/exports/android/senjin-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose godot/exports/android/senjin-debug.apk | tee artifacts/android-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging godot/exports/android/senjin-debug.apk | tee artifacts/android-package.txt
+          grep -q "package: name='org.mightyjuke.senjin'" artifacts/android-package.txt
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('godot/exports/android/senjin-debug.apk') as apk:
+              paths = apk.namelist()
+              assert any(p.startswith('lib/arm64-v8a/') and p.endswith('.so') for p in paths)
+              assert any(p.startswith('lib/x86_64/') and p.endswith('.so') for p in paths)
+              assert any('legal/NOTICE.txt' in p for p in paths), 'Native attribution missing'
+              assert not any('/vendor/three/' in p or 'brush.woff2' in p for p in paths)
+          print('SENJIN_ANDROID_APK_PASS')
+          PY
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/android-export.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-android-debug-${{ github.sha }}
+          path: |
+            godot/exports/android/senjin-debug.apk
+            artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  ios-native:
+    # Godot's current Swift runtime objects cannot link against Xcode 15.4.
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install matching engine and iOS template
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_macos.universal.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          echo '/tmp/godot/Godot.app/Contents/MacOS' >> "$GITHUB_PATH"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q /tmp/templates.tpz 'templates/ios.zip' -d /tmp/templates
+          cp /tmp/templates/templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable/"
+          mkdir -p godot/exports/ios artifacts
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version | tee artifacts/ios-toolchain.txt
+          # Sentinel for unsigned project generation, not an Apple team or credential.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('godot/export_presets.cfg')
+          text=p.read_text()
+          assert 'application/app_store_team_id=""' in text
+          p.write_text(text.replace('application/app_store_team_id=""','application/app_store_team_id="CIUNSIGNED"'))
+          PY
+      - name: Export unsigned Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          Godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/ios-import.log
+          Godot --headless --path godot --export-debug 'iOS' 2>&1 | tee artifacts/ios-export.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/ios-export.log; then exit 1; fi
+      - name: Compile available iOS Simulator architecture without signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          project=$(find godot/exports/ios -name '*.xcodeproj' -print -quit)
+          if [ -z "$project" ] && [ -f godot/exports/ios/Senjin.zip ]; then
+            unzip -q godot/exports/ios/Senjin.zip -d godot/exports/ios/unpacked
+            project=$(find godot/exports/ios -name '*.xcodeproj' -print -quit)
+          fi
+          test -n "$project"
+          xcodebuild -list -json -project "$project" > artifacts/ios-project.json
+          scheme=$(python3 -c "import json; print(json.load(open('artifacts/ios-project.json'))['project']['schemes'][0])")
+          simlib=$(find godot/exports/ios -path '*Senjin.xcframework/*simulator/libgodot.a' -print -quit)
+          test -n "$simlib"
+          arches=$(xcrun lipo -archs "$simlib")
+          echo "Template simulator architectures: $arches" | tee artifacts/ios-simulator-architecture.txt
+          simarch=$(uname -m)
+          if ! echo "$arches" | grep -qw "$simarch"; then simarch=$(echo "$arches" | awk '{print $1}'); fi
+          case "$simarch" in arm64|x86_64) ;; *) echo "Unsupported simulator slice: $simarch"; exit 1;; esac
+          xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/senjin-derived ARCHS="$simarch" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-build.log
+          app=$(find /tmp/senjin-derived/Build/Products -maxdepth 3 -name '*.app' -print -quit)
+          test -n "$app"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist" | tee artifacts/ios-bundle.txt
+          grep -qx 'org.mightyjuke.senjin' artifacts/ios-bundle.txt
+          ditto -c -k --sequesterRsrc --keepParent "$app" artifacts/Senjin-simulator.app.zip
+          echo SENJIN_IOS_SIMULATOR_BUILD_PASS
+      - name: Compile ARM64 iPhone and iPad target without signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          project=$(find godot/exports/ios -name '*.xcodeproj' -print -quit)
+          scheme=$(python3 -c "import json; print(json.load(open('artifacts/ios-project.json'))['project']['schemes'][0])")
+          xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath /tmp/senjin-device ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-device-build.log
+          app=$(find /tmp/senjin-device/Build/Products -maxdepth 3 -name '*.app' -print -quit)
+          test -n "$app"
+          xcrun lipo -archs "$app/Senjin" | tee artifacts/ios-device-architecture.txt
+          grep -qx arm64 artifacts/ios-device-architecture.txt
+          echo SENJIN_IOS_ARM64_BUILD_PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-ios-native-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
