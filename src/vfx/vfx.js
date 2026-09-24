@@ -156,7 +156,7 @@ const TRAIL_FS = /* glsl */`
       float core = step(coreLo, band) * (1.0 - step(rimLo, band)) * smoothstep(0.25, 0.6, life);
       float fringe = step(coreLo - 1.0, band) * (1.0 - step(coreLo, band)) * step(0.4, life);
       float rim = step(rimLo, band) * step(age, 0.8) * pow(life, 0.5);
-      float aC = core * mix(0.5, 0.4, graze) * (0.55 + 0.45 * head) * (0.8 + 0.2 * r1) * vVeil;   // r4: flat disc translucent (reference build C4 mid-grey), bright rim
+      float aC = core * mix(0.5, 0.4, graze) * (0.55 + 0.45 * head) * (0.8 + 0.2 * r1) * vVeil;   // r4: flat disc translucent (SENJIN tuning C4 mid-grey), bright rim
       vec3 hot = mix(vec3(1.3, 1.42, 1.55), vec3(1.05, 1.55, 1.5), hue);
       o = vec4(white * aC + blue * fringe * 0.5 * vVeil + hot * rim * (0.75 + 0.35 * head), aC + fringe * 0.4 * vVeil + rim) * g;
       #ifdef DEPTH_PASS
@@ -235,7 +235,7 @@ const STAR_FS = /* glsl */`
   void main() {
     float u = vF.x, a = vF.y * 6.2832;
     if (vF.z > 0.5) {
-      // contact burst (benchmark reference build f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
+      // contact burst (benchmark SENJIN tuning f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
       // spikes of random length, white-hot at the root and red-orange at the tip, shooting out and detaching from the
       // core as they age, over a short red-orange fireball; pixel-stepped so it stays a crisp retro sprite under bloom
       vec2 p = floor(vP * 18.0 + 0.5) / 18.0;
@@ -254,7 +254,7 @@ const STAR_FS = /* glsl */`
       // premultiplied "over": the spikes replace the sand behind them instead of adding to it, so red-orange stays
       // red-orange on a bright frame (additive washed it to peach) and a cluster of bursts never sums to white
       // the grade bleaches anything far over its knee (post.js hotDesat), so the hue lives in near-display values:
-      // white-hot root → yellow → vCol (orange, ≈ 0.5 linear) → dark-red tip (reference build flame edge); only the core blooms
+      // white-hot root → yellow → vCol (orange, ≈ 0.5 linear) → dark-red tip (SENJIN tuning flame edge); only the core blooms
       vec3 hot = vec3(2.4, 2.2, 1.9), yel = vCol * vec3(1.1, 2.0, 2.0);
       vec3 sc = mix(mix(hot, yel, smoothstep(0.02, 0.14, rl)), vCol, smoothstep(0.14, 0.4, rl));
       sc = mix(sc, vCol * vec3(0.8, 0.6, 0.6), smoothstep(0.7, 1.0, rl));
@@ -854,7 +854,7 @@ export function createVfx(scene, game, world) {
           }
         }
         // C3: dark smoke arc grows over the hero from ≈ 12 sf before the slam, so the gold pillars flash out of a dark
-        // beat (benchmark: dark arc f341-348, pillars f349)
+        // beat (tuning target: dark arc f341-348, pillars f349)
         if (h.move === 'c3' && C3_SLAM > 12) { const k = t - (C3_SLAM - 12); if (k >= 0 && k < 8) darkArc(h, k / 8, (k + 1) / 8); }
         // footfall dust while a lunge carries the hero along the ground (N4 run-in, dash, N6 hop-lunge…)
         if (!m.air && h.y < 0.2 && t % 4 === 0) for (const [f0, f1] of m.lunge) if (t >= f0 && t <= f1) { dustPuff(h.x, h.z, 2, 1.4, 0.3, 0.05, 0.4); break; }
