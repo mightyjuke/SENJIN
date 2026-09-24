@@ -41,7 +41,7 @@ const heroView = createHeroView(scene, game.hero);
 const crowdView = createCrowdView(scene, game);
 const camRig = createCameraRig(game, vw, vh);
 const vfx = createVfx(scene, game, world);
-const surgeView = createSurgeView(scene, game, camRig.camera);   // surge part: grade, dragon, cut-in (render-only)
+const surgeView = createSurgeView(scene, game, camRig.camera);   // surge part: grade, storm ribbon, cut-in (render-only)
 // hud part: camera passed so officer name/HP tags can be projected over their heads (read-only)
 const hud = createHud(document.getElementById('hud'), game, { camera: camRig.camera });
 createAudio(game);
