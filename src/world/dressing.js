@@ -1,4 +1,4 @@
-// Battlefield dressing: 魏/蜀 banners with wind-driven cloth, fires (voxel flames + embers), smoke columns, and the
+// Battlefield dressing: fictional enemy/ally banners with wind-driven cloth, fires (voxel flames + embers), smoke columns, and the
 // Wei camp ring (palisade, tents, barricades). Everything animates as a pure function of render time → capture-
 // deterministic; nothing touches sim state.
 import * as THREE from 'three';
@@ -23,7 +23,7 @@ function bannerTexture(ch, { bg, fg, border, w = 128, h = 256, tatter = true, se
   g.fillStyle = fg;
   g.font = `bold ${Math.round(w * 0.66)}px "Xingkai SC","STXingkai","Kaiti SC","STKaiti","KaiTi","Songti SC",serif`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  if (ch) g.fillText(ch, w / 2, h * 0.42);   // fill only: a stroke closes 魏's dense counters into a blob at gameplay distance
+  if (ch) g.fillText(ch, w / 2, h * 0.42);   // fill only: a stroke closes enemy standard's dense counters into a blob at gameplay distance
   const grad = g.createLinearGradient(0, 0, 0, h);                    // soot toward the hem
   grad.addColorStop(0.6, 'rgba(20,8,6,0)'); grad.addColorStop(1, 'rgba(20,8,6,0.45)');
   g.fillStyle = grad; g.fillRect(0, 0, w, h);
@@ -211,12 +211,12 @@ function camp(b, r, gateX) {
 export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
   const r = makeRng(44);
   const poles = [], cloths = [];
-  // sunlight through the cloth: emissive = the banner's own texture, so 魏/蜀 read even when backlit
+  // sunlight through the cloth: emissive = the banner's own texture, so fictional enemy/ally read even when backlit
   const cm = (map, alpha = true) => new THREE.MeshStandardMaterial({ map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 0.22, side: THREE.DoubleSide, alphaTest: alpha ? 0.5 : 0, roughness: 0.92, flatShading: true });
   const mats = {
-    wei: cm(bannerTexture('魏', { bg: '#7d2a1f', fg: '#1a0d0a', border: '#4a1712', seed: 3 })),
-    shu: cm(bannerTexture('蜀', { bg: '#c7a574', fg: '#2a120a', border: '#8e2a1c', w: 192, h: 256, seed: 5 })),
-    shuFlag: cm(bannerTexture('蜀', { bg: '#b89668', fg: '#2a120a', border: '#9a2e1e', w: 128, h: 96, tatter: false, seed: 6 }), false),
+    enemy: cm(bannerTexture('焔', { bg: '#7d2a1f', fg: '#1a0d0a', border: '#4a1712', seed: 3 })),
+    ally: cm(bannerTexture('月', { bg: '#c7a574', fg: '#2a120a', border: '#8e2a1c', w: 192, h: 256, seed: 5 })),
+    allyFlag: cm(bannerTexture('月', { bg: '#b89668', fg: '#2a120a', border: '#9a2e1e', w: 128, h: 96, tatter: false, seed: 6 }), false),
     red: cm(bannerTexture('', { bg: '#a3321f', fg: '#000', border: '#6a1c12', w: 64, h: 128, seed: 7 })),
   };
   const addCloth = (mat, w, h, kind, x, y, z, yaw) => {
@@ -226,7 +226,7 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
     return c;
   };
   /** Wei standard: pole + crossbar, cloth hangs from the bar; faces the arena centre. */
-  const standard = (x, z, s = 1, mat = mats.wei, P = 8.5 * s) => {
+  const standard = (x, z, s = 1, mat = mats.enemy, P = 8.5 * s) => {
     const W = 2.3 * s, Hc = 4.3 * s;
     const yaw = Math.atan2(-x, -z) + r.range(-0.35, 0.35);                 // cloth plane faces the centre
     const cx = Math.cos(yaw), cz = -Math.sin(yaw);
@@ -241,21 +241,21 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
     const a = (i / 22) * Math.PI * 2 + r.range(-0.08, 0.08);
     if (Math.cos(a) > 0.62) continue;                                    // keep the castle view clear
     const R = i % 2 ? r.range(47, 52) : r.range(58, 62);
-    standard(Math.sin(a) * R, Math.cos(a) * R, r.range(0.95, 1.25), r.chance(0.15) ? mats.red : mats.wei);
+    standard(Math.sin(a) * R, Math.cos(a) * R, r.range(0.95, 1.25), r.chance(0.15) ? mats.red : mats.enemy);
   }
   // the flank toward the watchtowers: a cluster of big standards (concept left side)
   for (const [x, z, s] of [[40, 30, 1.35], [47, 22, 1.2], [36, 40, 1.1], [52, 34, 1.25]]) standard(x, z, s);
   // castle arc: the siege line of standards just outside the arena (R 47-57, never between a wall-facing camera and
-  // the hero), cloth at ≈ 2.7-7 m so it sits inside the gameplay frame's top band; clear of the gate and the 蜀 drape
+  // the hero), cloth at ≈ 2.7-7 m so it sits inside the gameplay frame's top band; clear of the gate and the 月 drape
   for (const [x, z, s, red] of [[-57, 10, 1.1], [-51, 21, 1.05], [-43, 30, 1, 1], [-33, 39, 1.1], [-2, 48, 1.05], [8, 49, 1], [24.5, 42, 1.1], [36, 33, 1.05, 1]]) {
-    standard(x, z, s, red ? mats.red : mats.wei, 7.3 * s);
+    standard(x, z, s, red ? mats.red : mats.enemy, 7.3 * s);
   }
   // … and a few out on the open flank beside the watchtowers (the sun gap and the tower cabins stay clear)
   for (const [x, z, s] of [[52, 74, 1.25], [62, 58, 1.2], [74, 70, 1.3]]) standard(x, z, s);
-  // 蜀: great banner draped on the wall beside the gate, flags along the wall walk, towers
-  addCloth(mats.shu, 7.5, 9.5, 'drape', gateX - 18 + 3.75, castle.H - 0.3, wallZ - 0.35, Math.PI);   // faces the arena (-Z)
+  // 月: great banner draped on the wall beside the gate, flags along the wall walk, towers
+  addCloth(mats.ally, 7.5, 9.5, 'drape', gateX - 18 + 3.75, castle.H - 0.3, wallZ - 0.35, Math.PI);   // faces the arena (-Z)
   poles.push({ s: [8.6, 0.35, 0.35], p: [gateX - 18, castle.H - 0.15, wallZ - 0.4], c: 0x3b2a1e });
-  const flag = (x, y, z, h = 3.2, mat = mats.shuFlag) => {
+  const flag = (x, y, z, h = 3.2, mat = mats.allyFlag) => {
     poles.push({ s: [0.12, h + 1.4, 0.12], p: [x, y + (h + 1.4) / 2, z], c: 0x3b2a1e });
     addCloth(mat, 1.9, 1.3, 'flag', x, y + h + 1.3, z, Math.atan2(-WIND.z, WIND.x));
   };
@@ -287,7 +287,7 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
   };
 
   // fallen standards lying in the dirt (flat, never occlude)
-  const fallenMat = new THREE.MeshStandardMaterial({ map: mats.wei.map, color: 0x9a8a80, side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.95 });   // trampled, dusty
+  const fallenMat = new THREE.MeshStandardMaterial({ map: mats.enemy.map, color: 0x9a8a80, side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.95 });   // trampled, dusty
   for (let i = 0; i < 7; i++) {
     const a2 = r.range(0, 6.28), d = r.range(12, 42), x = Math.sin(a2) * d, z = Math.cos(a2) * d, yaw = r.range(0, 6.28);
     const c = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 4.3, 3, 4), fallenMat);
