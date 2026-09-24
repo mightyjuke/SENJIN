@@ -1,6 +1,6 @@
 extends Node
-## Same command stream for touch, keyboard and standard controllers.
-## Touches have independent owners; releasing one finger cannot release another's action.
+## One command stream for touch, keyboard and standard controllers.
+## Touches have independent owners; releasing one finger cannot release another.
 signal pause_requested
 var active: bool = false
 var show_touch: bool = false
@@ -101,8 +101,8 @@ func handle_drag(index: int, point: Vector2) -> void:
 		_look_point = point
 
 func _input(event: InputEvent) -> void:
-	# Menu Controls consume the touch-to-mouse stream. Gameplay must NOT also
-	# interpret that synthetic click as an attack when the joystick is touched.
+	# Controls consume this stream for menus; gameplay must not interpret a
+	# synthetic joystick click as an attack.
 	if event is InputEventMouse and event.device == -1:
 		return
 	if event is InputEventScreenTouch:
@@ -160,7 +160,8 @@ func poll() -> Dictionary:
 	actions.assign(_pending)
 	_pending.clear()
 	_repeat_frame += 1
-	if _repeat_frame % 12 == 0 and ("attack" in _held.values() or "attack" in _action_fingers.values()) and not "attack" in actions:
+	# Explicit charge/dodge/jump/Surge presses take priority over auto-repeat.
+	if actions.is_empty() and _repeat_frame % 12 == 0 and ("attack" in _held.values() or "attack" in _action_fingers.values()):
 		actions.append("attack")
 	var result: Vector2 = movement if _move_finger >= 0 else (keyboard + pad_move).limit_length(1.0)
 	return {"move":result,"look":look,"actions":actions}

@@ -54,6 +54,11 @@ func play(id:String) -> void:
 func stop_all() -> void:
 	for voice in _voices:
 		voice.stop()
+		voice.stream=null
+
+func _exit_tree() -> void:
+	stop_all()
+	_bank.clear()
 
 func _action(id:String) -> void:
 	if id in ["surge","surge_contact"]:

@@ -91,7 +91,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  ios-simulator:
+  ios-native:
     runs-on: macos-14
     timeout-minutes: 25
     steps:
@@ -109,8 +109,7 @@ jobs:
           unzip -q /tmp/templates.tpz 'templates/ios.zip' -d /tmp/templates
           cp /tmp/templates/templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable/"
           mkdir -p godot/exports/ios artifacts
-          # Non-production sentinel for project generation only, not an Apple team.
-          # Signing is disabled and the modified preset is never committed.
+          # Sentinel for unsigned project generation, not an Apple team or credential.
           python3 - <<'PY'
           from pathlib import Path
           p=Path('godot/export_presets.cfg')
@@ -123,9 +122,9 @@ jobs:
         run: |
           set -euo pipefail
           Godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/ios-import.log
-          Godot --verbose --headless --path godot --export-debug 'iOS' 2>&1 | tee artifacts/ios-export.log
+          Godot --headless --path godot --export-debug 'iOS' 2>&1 | tee artifacts/ios-export.log
           if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/ios-export.log; then exit 1; fi
-      - name: Compile iOS Simulator without signing
+      - name: Compile available iOS Simulator architecture without signing
         shell: bash
         run: |
           set -euo pipefail
@@ -137,17 +136,38 @@ jobs:
           test -n "$project"
           xcodebuild -list -json -project "$project" > artifacts/ios-project.json
           scheme=$(python3 -c "import json; print(json.load(open('artifacts/ios-project.json'))['project']['schemes'][0])")
-          xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/senjin-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-build.log
+          simlib=$(find godot/exports/ios -path '*Senjin.xcframework/*simulator/libgodot.a' -print -quit)
+          test -n "$simlib"
+          arches=$(xcrun lipo -archs "$simlib")
+          echo "Template simulator architectures: $arches" | tee artifacts/ios-simulator-architecture.txt
+          simarch=$(uname -m)
+          if ! echo "$arches" | grep -qw "$simarch"; then simarch=$(echo "$arches" | awk '{print $1}'); fi
+          case "$simarch" in arm64|x86_64) ;; *) echo "Unsupported simulator slice: $simarch"; exit 1;; esac
+          # Some template releases contain an x86_64-only simulator library.
+          # Do not force the host's arm64 architecture onto that library.
+          xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/senjin-derived ARCHS="$simarch" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-build.log
           app=$(find /tmp/senjin-derived/Build/Products -maxdepth 3 -name '*.app' -print -quit)
           test -n "$app"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist" | tee artifacts/ios-bundle.txt
           grep -qx 'org.mightyjuke.senjin' artifacts/ios-bundle.txt
           ditto -c -k --sequesterRsrc --keepParent "$app" artifacts/Senjin-simulator.app.zip
           echo SENJIN_IOS_SIMULATOR_BUILD_PASS
+      - name: Compile ARM64 iPhone and iPad target without signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          project=$(find godot/exports/ios -name '*.xcodeproj' -print -quit)
+          scheme=$(python3 -c "import json; print(json.load(open('artifacts/ios-project.json'))['project']['schemes'][0])")
+          xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath /tmp/senjin-device ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-device-build.log
+          app=$(find /tmp/senjin-device/Build/Products -maxdepth 3 -name '*.app' -print -quit)
+          test -n "$app"
+          xcrun lipo -archs "$app/Senjin" | tee artifacts/ios-device-architecture.txt
+          grep -qx arm64 artifacts/ios-device-architecture.txt
+          echo SENJIN_IOS_ARM64_BUILD_PASS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: senjin-ios-simulator-${{ github.sha }}
+          name: senjin-ios-native-${{ github.sha }}
           path: artifacts/
           if-no-files-found: warn
           retention-days: 14

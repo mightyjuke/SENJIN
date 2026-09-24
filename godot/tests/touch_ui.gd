@@ -32,6 +32,18 @@ func _run() -> void:
 	controls._input(click)
 	check("attack" in controls.poll().actions, "real mouse retains attack control")
 	controls.clear()
+	controls.handle_touch(4,controls.buttons.attack,true)
+	controls.poll()
+	for _i in range(10):
+		controls.poll()
+	controls.handle_touch(5,controls.buttons.charge,true)
+	var command: Dictionary = controls.poll()
+	check(command.actions == ["charge"], "explicit charge wins over a held attack on the auto-repeat frame")
+	controls.handle_touch(5,controls.buttons.charge,false)
+	for _i in range(11):
+		controls.poll()
+	check("attack" in controls.poll().actions, "held attack resumes after explicit charge")
+	controls.clear()
 	check(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch"), "native menu touch-to-mouse enabled")
 	controls.active = false
 	var sim = Battle.new()
