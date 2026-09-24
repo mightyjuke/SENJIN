@@ -3,12 +3,12 @@
 //    (follows the rendered spear tip exactly). Bold near-white core + blue fringe under an HDR rim over a translucent
 //    veil of voxel-stepped speed lines; flat spins seen edge-on fill into a full disc; only a fast tip draws; older
 //    ribbons dim; keeps ageing (half rate) through hitstop.
-//  - Thrust streaks: camera-facing beams shot along every line-shaped hitbox tick (N3, N5, C2, C3 flurry, dash, musou).
+//  - Thrust streaks: camera-facing beams shot along every line-shaped hitbox tick (N3, N5, C2, C3 flurry, dash, surge).
 //  - Contact: pixel-stepped star flash + radial needle sparks per struck soldier (budgeted per frame so sweeps stay
 //    readable), cyan for charge hits, orange-gold for normals.
 //  - Finishers with mass: C6 rock eruption (voxel boulders 1-2 H up inside a ≥ 2.5 H dust wall), C3 dark smoke arc →
 //    gold pillar ring, C5 fan of ice shafts, jump charge / N6 quake; other heavy windows shaped by the hitbox. Volumes
-//    keep the sector toward the camera clear. Musou burst = teal-white ray burst + whiteout + rock eruption.
+//    keep the sector toward the camera clear. Surge burst = teal-white ray burst + whiteout + rock eruption.
 //  - Every KO breaks the soldier apart: voxel-clump debris in his palette plus helmet / torso / shield blocks (bounce,
 //    settle, persist), warm voxel dust, embers, charge glint.
 import * as THREE from 'three';
@@ -121,7 +121,7 @@ const TRAIL_VS = /* glsl */`
     mv.xyz *= max(0.3, (d - pull) / d);
     gl_Position = projectionMatrix * mv;
   }`;
-// aT = (age 0 new..1 old, across 0 inner..1 outer edge, gain, hue 0 white-blue..1 musou teal)
+// aT = (age 0 new..1 old, across 0 inner..1 outer edge, gain, hue 0 white-blue..1 surge teal)
 // The concept's arc: a translucent white veil streaked with voxel-stepped speed lines, a bold near-white core
 // (#f0f6f9) with a blue fringe under a crisp HDR rim. Premultiplied "over" blending (rgb + dst·(1 − a)): the veil and
 // the core can never add up past their own colour, so a bold ribbon over a bright body or its own folds stays below
@@ -156,7 +156,7 @@ const TRAIL_FS = /* glsl */`
       float core = step(coreLo, band) * (1.0 - step(rimLo, band)) * smoothstep(0.25, 0.6, life);
       float fringe = step(coreLo - 1.0, band) * (1.0 - step(coreLo, band)) * step(0.4, life);
       float rim = step(rimLo, band) * step(age, 0.8) * pow(life, 0.5);
-      float aC = core * mix(0.5, 0.4, graze) * (0.55 + 0.45 * head) * (0.8 + 0.2 * r1) * vVeil;   // r4: flat disc translucent (DW8 C4 mid-grey), bright rim
+      float aC = core * mix(0.5, 0.4, graze) * (0.55 + 0.45 * head) * (0.8 + 0.2 * r1) * vVeil;   // r4: flat disc translucent (reference build C4 mid-grey), bright rim
       vec3 hot = mix(vec3(1.3, 1.42, 1.55), vec3(1.05, 1.55, 1.5), hue);
       o = vec4(white * aC + blue * fringe * 0.5 * vVeil + hot * rim * (0.75 + 0.35 * head), aC + fringe * 0.4 * vVeil + rim) * g;
       #ifdef DEPTH_PASS
@@ -235,7 +235,7 @@ const STAR_FS = /* glsl */`
   void main() {
     float u = vF.x, a = vF.y * 6.2832;
     if (vF.z > 0.5) {
-      // contact burst (benchmark DW8XL f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
+      // contact burst (benchmark reference build f372: 1-2 H radial explosion round a white core, gone in ≈ 8 sf): 13 seeded
       // spikes of random length, white-hot at the root and red-orange at the tip, shooting out and detaching from the
       // core as they age, over a short red-orange fireball; pixel-stepped so it stays a crisp retro sprite under bloom
       vec2 p = floor(vP * 18.0 + 0.5) / 18.0;
@@ -254,7 +254,7 @@ const STAR_FS = /* glsl */`
       // premultiplied "over": the spikes replace the sand behind them instead of adding to it, so red-orange stays
       // red-orange on a bright frame (additive washed it to peach) and a cluster of bursts never sums to white
       // the grade bleaches anything far over its knee (post.js hotDesat), so the hue lives in near-display values:
-      // white-hot root → yellow → vCol (orange, ≈ 0.5 linear) → dark-red tip (DW8XL flame edge); only the core blooms
+      // white-hot root → yellow → vCol (orange, ≈ 0.5 linear) → dark-red tip (reference build flame edge); only the core blooms
       vec3 hot = vec3(2.4, 2.2, 1.9), yel = vCol * vec3(1.1, 2.0, 2.0);
       vec3 sc = mix(mix(hot, yel, smoothstep(0.02, 0.14, rl)), vCol, smoothstep(0.14, 0.4, rl));
       sc = mix(sc, vCol * vec3(0.8, 0.6, 0.6), smoothstep(0.7, 1.0, rl));
@@ -538,7 +538,7 @@ export function createVfx(scene, game, world) {
 
   const isHeavyMove = (id) => !!id && (id[0] === 'c' || id === 'jc' || id === 'n6');
   function trailActive(h) {
-    if (h.state === 'musou') return h.stateT > 30;           // after the activation pose
+    if (h.state === 'surge') return h.stateT > 30;           // after the activation pose
     if (h.state !== 'attack') return false;
     for (const w of MOVES[h.move].hits) if (h.moveT >= w.f[0] - 3 && h.moveT <= w.f[1] + 2) return true;
     return false;
@@ -658,11 +658,11 @@ export function createVfx(scene, game, world) {
   on('hit', (e) => {
     if (game.frame !== hitFrame) { hitFrame = game.frame; hitN = 0; }
     hitN++;
-    const cool = e.heavy || e.move === 'musou';
+    const cool = e.heavy || e.move === 'surge';
     const pal = cool ? NEEDLE_COOL : NEEDLE_WARM;
-    // musou part r2: the Musou lands ~100 hits in 0.4 s; at the normal budget their sparks + stars bloomed into a white
-    // cloud over the launch fan, so musou hits get a tighter one (the musou view draws the payoff light itself)
-    const mh = e.move === 'musou';
+    // surge part r2: the Surge lands ~100 hits in 0.4 s; at the normal budget their sparks + stars bloomed into a white
+    // cloud over the launch fan, so surge hits get a tighter one (the surge view draws the payoff light itself)
+    const mh = e.move === 'surge';
     // benchmark contact spark: 1-2 BH across, ≤ 8 sf, radial streaks round a white core; heavy hits a size up
     // (the first few struck soldiers of a frame get the full burst, the rest a small one, so a sweep does not fog white)
     // r4: the first 6 struck soldiers of a frame get the full 1-2 H burst (star spikes ≈ 1.6-1.9 m radius + 14-18
@@ -685,9 +685,9 @@ export function createVfx(scene, game, world) {
   // KO: the soldier visibly breaks apart — chunky voxel debris in his own colours plus helmet / torso / shield blocks
   on('ko', (e) => {
     const pal = e.officer ? OFFICER : SOLDIER;
-    // musou part r2: ~55 KOs land inside 1 s of Musou; full debris per KO buried the launch fan and the dragon once the
-    // payoff stopped being a whiteout, so a Musou KO (not an officer) sheds a few smaller chunks and no body blocks
-    const mk = game.hero.state === 'musou' && !e.officer;
+    // surge part r2: ~55 KOs land inside 1 s of Surge; full debris per KO buried the launch fan and the dragon once the
+    // payoff stopped being a whiteout, so a Surge KO (not an officer) sheds a few smaller chunks and no body blocks
+    const mk = game.hero.state === 'surge' && !e.officer;
     // a KO within ≈ 5 m of the lens sheds fewer, smaller chunks (big blocks there covered the frame)
     const near = Math.min(1, Math.max(0.45, Math.hypot(camPos.x - e.x, camPos.y - e.y, camPos.z - e.z) / 5));
     chunks(e.x, e.y, e.z, Math.round((e.officer ? 14 : mk ? 4 : 9) * near), e.dx, e.dz, 4.2, pal, (mk ? 0.08 : 0.11) * near, (mk ? 0.13 : 0.22) * near, [1.8, 4.2], [1.2, 2]);
@@ -783,17 +783,17 @@ export function createVfx(scene, game, world) {
     if (e.charge) ring(e.x, e.z, 2.4, Math.max(0.2, e.tell / 60), [0.7, 1.1, 2.0]);
   });
 
-  on('musou:start', (e) => {
-    // no screen flash here: src/musou/view.js owns the activation flash + dim (musou part)
+  on('surge:start', (e) => {
+    // no screen flash here: src/surge/view.js owns the activation flash + dim (surge part)
     ring(e.x, e.z, 7, 0.5, TEAL);
     star(tipNow.x, tipNow.y, tipNow.z, 1.0, 0.5, [1.0, 1.9, 2.8], 0);
     shards(e.x, 1.0, e.z, 20, 4, [0.6, 1.6, 2.4], 0.06);
     dustRing(e.x, e.z, 16, 0.4, 5, 0.45, 0.45);
   });
-  on('musou:hit', (e) => {
+  on('surge:hit', (e) => {
     const h = game.hero, fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), side = (e.n % 2 ? 1 : -1) * 0.25;
     const y = Math.min(1.8, Math.max(0.8, tipNow.y));
-    // musou part r2: ~2 ticks land per frame and every streak runs from Zhao Yun along the rush line — right over the
+    // surge part r2: ~2 ticks land per frame and every streak runs from the vanguard along the rush line — right over the
     // dragon that now surges out of the spear — so they piled into a white bar that hid it and the launch fan: streaks
     // only on the contact thrust and every other sweep, slimmer; sparks elsewhere
     if (!(e.stage === 'contact' || (e.stage === 'rush' && e.n % 6 === 0))) { needleBurst(e.x, e.y, e.z, 3, fx, fz, 12, NEEDLE_COOL, 0.05); return; }
@@ -803,20 +803,20 @@ export function createVfx(scene, game, world) {
     needleBurst(e.x, e.y, e.z, 5, fx, fz, 12, NEEDLE_COOL, 0.05);
     if (e.n % 3 === 0) dustPuff(h.x, h.z, 2, 2.5, 0.4, 0.1, 0.45);
   });
-  on('musou:burst', (e) => {
-    // musou part r2: the finisher sits under the musou view's own burst light and the post's cool-biased bloom; at full
+  on('surge:burst', (e) => {
+    // surge part r2: the finisher sits under the surge view's own burst light and the post's cool-biased bloom; at full
     // strength these stacked into a white fog over the launched tiers. Short flash
     // kick (was 0.3 held 0.35 s), fewer / slimmer / dimmer rays and sparks, so the bodies stay readable.
     flash(0.12, 0, 4);                                    // ≈ 2 frames: the cream mix held a veil over the launched tiers
     rayBurst(e.x, 0.2, e.z, 12, 10, [0.2, 0.85, 1.15], [0.2, 1.3], 0.8, 0.45);
     rayBurst(e.x, 0.2, e.z, 4, 7, [0.9, 1.0, 1.1], [0.9, 1.45], 0.6, 0.4);
-    // musou part r3: the 13 m teal + 8 m gold ground rings passed under the finisher camera and filled the lower half of
-    // the frame with additive haze for ≈ 0.3 s; the musou view's waist-high lightning band now carries the ring wave
+    // surge part r3: the 13 m teal + 8 m gold ground rings passed under the finisher camera and filled the lower half of
+    // the frame with additive haze for ≈ 0.3 s; the surge view's waist-high lightning band now carries the ring wave
     ring(e.x, e.z, 5.5, 0.4, TEAL);
     needleBurst(e.x, 1, e.z, 24, 0, 0, 20, NEEDLE_COOL, 0.07);
     shards(e.x, 1, e.z, 16, 10, [0.4, 1.0, 1.5], 0.1);
-    dustRing(e.x, e.z, 28, 0.8, 7, 0.7, 0.35);           // musou part r3: shorter / thinner — it rolled over the finisher lens
-    // musou part r2 budget: fewer boulders / dust than the vfx part's full eruption so the launched tiers stay readable;
+    dustRing(e.x, e.z, 28, 0.8, 7, 0.7, 0.35);           // surge part r3: shorter / thinner — it rolled over the finisher lens
+    // surge part r2 budget: fewer boulders / dust than the vfx part's full eruption so the launched tiers stay readable;
     // thin dust (the pale billows around him held a cream fog over the frame for ≈ 1 s after the burst)
     rocks(e.x, e.z, 18, 3, 0.16, 0.4, [5, 11], 8);
     dustColumn(e.x, e.z, 8, 2, 5, 4.6, [0.9, 1.3], 0.4);
@@ -833,7 +833,7 @@ export function createVfx(scene, game, world) {
     if (game.hitstop === 0 || game.hitstop % 2 === 0) clock++;   // half-rate ageing in hitstop: a heavy hit must not hang the crescent
     heroPose(h, pose);
     hpos.set(h.x, h.y, h.z);
-    const musou = h.state === 'musou', heavy = musou || (h.state === 'attack' && isHeavyMove(h.move));
+    const surge = h.state === 'surge', heavy = surge || (h.state === 'attack' && isHeavyMove(h.move));
     spearWorld(pose, hpos, h.yaw, heavy ? 1.05 : 1.25, 2.18, baseNow, tipNow);   // ribbon ≈ 0.9-1.1 m wide: a crisp band, not a sheet
 
     if (h.state === 'attack' && game.hitstop === 0) {
@@ -868,7 +868,7 @@ export function createVfx(scene, game, world) {
     const s = samples.length > MAXS ? samples.shift() : null;
     const smp = s && !s.brk ? s : { b: new THREE.Vector3(), t: new THREE.Vector3(), rt: new THREE.Vector3() };
     smp.rt.copy(tipNow);
-    smp.c = clock; smp.brk = false; smp.g = heavy ? 1.15 : 1; smp.hue = musou ? 1 : 0;
+    smp.c = clock; smp.brk = false; smp.g = heavy ? 1.15 : 1; smp.hue = surge ? 1 : 0;
     const last = samples[samples.length - 1], prev = last && !last.brk ? last : null;
     if (prev && prev.rt.distanceToSquared(tipNow) < 1e-6) { prev.c = clock; return; }
     // only a fast tip leaves a ribbon: wind-ups and holds (< ≈ 5 m/s) draw nothing, so no slow "flag" hangs on the spear
@@ -957,8 +957,8 @@ export function createVfx(scene, game, world) {
       sparks.spawn(h.x + Math.cos(a) * r, vrng.range(0.2, 2.5), h.z + Math.sin(a) * r, vrng.range(-0.2, 0.6), vrng.range(0.3, 1.1), vrng.range(-0.3, 0.3),
         vrng.range(2.2, 4), vrng.range(0.028, 0.05), 3, 2.3, 0.85, 0.22);
     }
-    // musou activation: cyan-white motes spiral up around the hero while the world holds still
-    if (h.state === 'musou' && h.stateT < 34) {
+    // surge activation: cyan-white motes spiral up around the hero while the world holds still
+    if (h.state === 'surge' && h.stateT < 34) {
       moteAcc += dt * 70;
       while (moteAcc > 1) {
         moteAcc--;
