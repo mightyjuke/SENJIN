@@ -8,7 +8,7 @@ import { MOVES } from '../moves.js';
 const D2R = Math.PI / 180, TAU = Math.PI * 2;
 const sstep = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 
-// Run carry (DW8): upright forward lean; the right hand holds the shaft at the hip, butt end up ahead-left past the
+// Run carry (reference build): upright forward lean; the right hand holds the shaft at the hip, butt end up ahead-left past the
 // head, blade trailing low behind-right; left arm free.
 const RUN_SPEC = {
   hips: [0, 0.84, 0.03], hipsR: [16, 0, 0], spine: [6, 0, 0], chest: [4, 0, 0], head: [2, 0, 0],
@@ -54,7 +54,7 @@ export const LOCO_CLIPS = {
     [1, P({ hips: [0, 0.95, 0], hipsR: [4, -20, 0], chest: [6, 5, 0], footL: [0.16, 0.12, 0.22, -5, 10], footR: [-0.18, 0.16, -0.2, 15, -20],
       spear: [-0.22, 1.05, 0.0, 30, 22, 0] })],
   ]),
-  // descent after an air string (DW8 A→X×n: a ≈0.4 s spread-arm fall): torso back, arms flung wide, spear held out
+  // descent after an air string (reference build A→X×n: a ≈0.4 s spread-arm fall): torso back, arms flung wide, spear held out
   // right and trailing back, looking down at the landing; legs gather under the body as the fall speeds up.
   // Same time base as `air` (0.5 = vy 0, 1 = falling at jumpV).
   airFall: clip([
@@ -235,7 +235,7 @@ export function createDodgeGhosts(scene, model) {
       if (dodging && (hero.dodgeSeq !== seq || hero.stateT < lastT)) { seq = hero.dodgeSeq; lastT = -9; }
       // i-frame read (the benchmark shows none): a white-teal pop on the push-off, then a teal shimmer that holds for
       // exactly the invulnerable window and cuts out when it ends. Jump charge: a pulsing blue aura through the apex
-      // hang (DW8 A→Y glows while it hangs), flaring just before the plunge.
+      // hang (reference build A→Y glows while it hangs), flaring just before the plunge.
       // locomotion-dodge r3: the glow is a bright rim + a light body tint (was a 0.75 additive shell = a white blob)
       let glow = 0, k = 1.06, edge = 0, ke = 1.1;
       if (dodging && hero.stateT < IF) {
