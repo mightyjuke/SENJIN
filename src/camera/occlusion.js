@@ -31,7 +31,7 @@ const VERT = (near) => /* glsl */`#include <project_vertex>
     vCamFade = uFadeOn * smoothstep(${near.toFixed(2)}, ${(near + 0.6).toFixed(2)}, front) * step(0.0, L - front);
     // lens clear: a soldier/prop standing close to the lens drops out (DW: the near crowd never walls off the frame).
     // A clean per-instance cut, no dither band (a ring sits in any band for good and read as a mosaic under the DoF).
-    // The radius scales with the rig, so pull-outs and Musou shots follow.
+    // The radius scales with the rig, so pull-outs and Surge shots follow.
     vLensFade = uFadeOn * step(length(fo - uFadeA), ${LENS} * L);
   }`;
 const FRAG = /* glsl */`
@@ -64,7 +64,7 @@ export function fadeOccluder(material, near = 0.5) {
 }
 
 /**
- * Lens-side clear (render-only, per soldier): DW8 keeps the ground between the lens and the hero open and the crowd
+ * Lens-side clear (render-only, per soldier): reference build keeps the ground between the lens and the hero open and the crowd
  * reads ahead of him. A soldier (alive, KO'd or flying) standing more than `hide` m in front of the hero along the
  * lens → hero ground axis is not drawn, whole; it reappears once back within `show` m (hysteresis: no flicker for
  * soldiers shuffling at the line). `extra` m pushes the line out (soldiers reeling from his hits stay readable a little
