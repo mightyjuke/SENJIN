@@ -9,7 +9,7 @@
     {
       "name": "vanguard",
       "file": "vanguard.glb",
-      "bytes": 1283252,
+      "bytes": 1222756,
       "triangles": 4884,
       "meshes": 1,
       "materials": 1,
@@ -39,12 +39,12 @@
         "Run",
         "Surge"
       ],
-      "sha256": "3ba58d7a46c8400427d33a871303b70a27006413f26326cb6a09eece050bdfa2"
+      "sha256": "5fdd91ce72d36389f291b249d670725343528c861f33c529b95cdbf22098f450"
     },
     {
       "name": "officer",
       "file": "officer.glb",
-      "bytes": 1293176,
+      "bytes": 1232676,
       "triangles": 4968,
       "meshes": 1,
       "materials": 1,
@@ -74,12 +74,12 @@
         "Run",
         "Surge"
       ],
-      "sha256": "d1c2a1a4a8618e38093a77d540e07fa7c92a2fc66549eb9a8b72f39c8fd591a5"
+      "sha256": "26abffd8d8f92cac192375b42a4cb488b8a580fd92e7f18661b0d758f1a88a51"
     },
     {
       "name": "soldier",
       "file": "soldier.glb",
-      "bytes": 1086772,
+      "bytes": 1026300,
       "triangles": 3204,
       "meshes": 1,
       "materials": 1,
@@ -109,7 +109,7 @@
         "Run",
         "Surge"
       ],
-      "sha256": "15e682e20d76ba5a02f8999edcf8ef7c6344fcf20c62eb98d3f9185d1c6a2efd"
+      "sha256": "42c1aadd66b311732735ba5073b5a57fd1e3c06e96dd36bc16ff33beabf3721d"
     },
     {
       "name": "soldier_body",

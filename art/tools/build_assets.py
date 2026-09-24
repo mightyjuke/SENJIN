@@ -222,8 +222,12 @@ def sockets(arm):
         out.append(ob)
     return out
 
-def orient(a,b):
-    a,b=Vector(a),Vector(b); return Matrix.Translation(a) @ (b-a).to_track_quat('Y','Z').to_matrix().to_4x4()
+def orient(a,b,rest):
+    # Preserve authored rest roll; a vertical track-Y/up-Z frame is singular.
+    a,b=Vector(a),Vector(b)
+    basis=rest.to_3x3()
+    delta=basis.col[1].normalized().rotation_difference((b-a).normalized())
+    return Matrix.Translation(a) @ delta.to_matrix().to_4x4() @ basis.to_4x4()
 def ik(a,b,l1,l2,pole):
     a,b=Vector(a),Vector(b); ab=b-a; dist=min(max(ab.length,.05),l1+l2-.0001); d=ab.normalized()
     v=Vector(pole)-a; v=(v-d*v.dot(d)).normalized(); along=(l1*l1-l2*l2+dist*dist)/(2*dist)
@@ -235,7 +239,7 @@ def pose(arm,f,grip=(0,-.46,1.14),yaw=.1,pitch=.65,twist=0,crouch=0,stride=0,lea
     def torso_point(p): return origin+bodyrot@Vector(p)
     mats['root']=Matrix.Identity(4)
     for n in ['hips','spine','head']:
-        a,b,_=spec[n]; mats[n]=orient(torso_point(a),torso_point(b))
+        a,b,_=spec[n]; mats[n]=Matrix.Translation(torso_point(a)) @ bodyrot @ arm.data.bones[n].matrix_local.to_3x3().to_4x4()
     direction=Vector((math.sin(yaw)*math.cos(pitch),-math.cos(yaw)*math.cos(pitch),math.sin(pitch)))
     gp=Vector(grip)+origin
     weaponrot=direction.to_track_quat('Z','Y').to_matrix().to_4x4()
@@ -246,17 +250,17 @@ def pose(arm,f,grip=(0,-.46,1.14),yaw=.1,pitch=.65,twist=0,crouch=0,stride=0,lea
         la=(Vector(spec['arm.'+s][1])-Vector(spec['arm.'+s][0])).length
         lb=(Vector(spec['forearm.'+s][1])-Vector(spec['forearm.'+s][0])).length
         elbow=ik(a,target,la,lb,(sign*.85,0,1.05-crouch))
-        mats['arm.'+s]=orient(a,elbow); mats['forearm.'+s]=orient(elbow,target)
-        mats['hand.'+s]=orient(target,target+direction*.10)
+        mats['arm.'+s]=orient(a,elbow,bodyrot @ arm.data.bones['arm.'+s].matrix_local); mats['forearm.'+s]=orient(elbow,target,bodyrot @ arm.data.bones['forearm.'+s].matrix_local)
+        mats['hand.'+s]=orient(target,target+direction*.10,bodyrot @ arm.data.bones['hand.'+s].matrix_local)
         hip=torso_point(spec['thigh.'+s][0]); phase=stride*sign
         foot=Vector((sign*.19,-.05+phase*.38,.105+max(0,phase)*.16))
         if fall: foot.z+=.22
         l1=(Vector(spec['thigh.'+s][1])-Vector(spec['thigh.'+s][0])).length
         l2=(Vector(spec['shin.'+s][1])-Vector(spec['shin.'+s][0])).length
         knee=ik(hip,foot,l1,l2,(sign*.17,-1,.48))
-        mats['thigh.'+s]=orient(hip,knee); mats['shin.'+s]=orient(knee,foot)
-        mats['foot.'+s]=orient(foot,foot+Vector((0,-.22,-.035)))
-    a,b,_=spec['scarf']; mats['scarf']=orient(torso_point(a),torso_point(b)+Vector((math.sin(f*.1)*.04,.025,0)))
+        mats['thigh.'+s]=orient(hip,knee,arm.data.bones['thigh.'+s].matrix_local); mats['shin.'+s]=orient(knee,foot,arm.data.bones['shin.'+s].matrix_local)
+        mats['foot.'+s]=orient(foot,foot+Vector((0,-.22,-.035)),arm.data.bones['foot.'+s].matrix_local)
+    a,b,_=spec['scarf']; mats['scarf']=orient(torso_point(a),torso_point(b)+Vector((math.sin(f*.1)*.04,.025,0)),bodyrot @ arm.data.bones['scarf'].matrix_local)
     if fall:
         pivot=Vector((0,0,.9)); roll=Matrix.Translation(pivot) @ Matrix.Rotation(fall,4,'X') @ Matrix.Translation(-pivot)
         for n in mats:
