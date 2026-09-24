@@ -1,0 +1,30 @@
+name: Validate SENJIN
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done < <(find src -type f -name '*.js' -print0)
+
+      - name: Ensure legacy franchise references are absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='Dynasty Warriors|KOEI|DW8|DW9|Zhao Yun|趙雲|赵云|Musou|musou|MUSOU|無雙|無双|无双'
+          if grep -RniE "$pattern" . --exclude-dir=.git; then
+            echo "Legacy franchise/reference terms found."
+            exit 1
+          fi
