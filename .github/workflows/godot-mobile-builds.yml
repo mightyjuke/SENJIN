@@ -38,11 +38,15 @@ jobs:
           unzip -q /tmp/godot.zip -d /tmp/godot
           sudo install "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o /tmp/templates.tpz
-          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable" artifacts godot/exports/android
           unzip -q /tmp/templates.tpz 'templates/android_debug.apk' 'templates/android_release.apk' 'templates/android_source.zip' -d /tmp/templates
           cp /tmp/templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
-          sdkmanager "platform-tools" "build-tools;35.0.1" "platforms;android-35"
-          mkdir -p "$HOME/.config/godot" godot/exports/android artifacts
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          manager=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)
+          test -x "$manager"
+          "$manager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.config/godot"
           python3 - <<'PY'
           from pathlib import Path
           import os
@@ -105,8 +109,8 @@ jobs:
           unzip -q /tmp/templates.tpz 'templates/ios.zip' -d /tmp/templates
           cp /tmp/templates/templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable/"
           mkdir -p godot/exports/ios artifacts
-          # This non-production sentinel only satisfies the project exporter. It is
-          # NOT an Apple team or signing credential and is never committed.
+          # Non-production sentinel for project generation only, not an Apple team.
+          # Signing is disabled and the modified preset is never committed.
           python3 - <<'PY'
           from pathlib import Path
           p=Path('godot/export_presets.cfg')
@@ -119,7 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           Godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/ios-import.log
-          Godot --headless --path godot --export-debug 'iOS' 2>&1 | tee artifacts/ios-export.log
+          Godot --verbose --headless --path godot --export-debug 'iOS' 2>&1 | tee artifacts/ios-export.log
           if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/ios-export.log; then exit 1; fi
       - name: Compile iOS Simulator without signing
         shell: bash
@@ -134,7 +138,7 @@ jobs:
           xcodebuild -list -json -project "$project" > artifacts/ios-project.json
           scheme=$(python3 -c "import json; print(json.load(open('artifacts/ios-project.json'))['project']['schemes'][0])")
           xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/senjin-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-build.log
-          app=$(find /tmp/senjin-derived/Build/Products -name '*.app' -maxdepth 3 -print -quit)
+          app=$(find /tmp/senjin-derived/Build/Products -maxdepth 3 -name '*.app' -print -quit)
           test -n "$app"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist" | tee artifacts/ios-bundle.txt
           grep -qx 'org.mightyjuke.senjin' artifacts/ios-bundle.txt

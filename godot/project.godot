@@ -20,6 +20,7 @@ window/energy_saving/keep_screen_on=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
+textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=0
 environment/defaults/default_clear_color=Color(0.12, 0.14, 0.19, 1)
 
