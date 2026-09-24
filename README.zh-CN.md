@@ -2,6 +2,19 @@
 
 # Voxel Musou — 赵云（趙雲）
 
+<p align="center">
+  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="赵云独战 300 魏兵——无双" width="100%"></a>
+</p>
+
+<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ 在浏览器中直接试玩 — voxel-musou.vercel.app</a></b></p>
+
+| | |
+| --- | --- |
+| ![混战，400+ 连击](media/crowd.jpg) | ![蓄力横扫](media/sweep.jpg) |
+| 混战，400+ 连击 | 蓄力横扫 |
+| ![无双 cut-in 特写](media/musou.jpg) | ![无双龙影，150 击破](media/dragon.jpg) |
+| 无双 cut-in 特写 | 无双龙影，150 击破 |
+
 一款可在浏览器中直接游玩的体素风动作游戏，玩法致敬《真·三国无双》，基于 Three.js 开发。操控赵云，手持长枪，在数百名魏军中杀出一条血路。
 
 无需构建：纯 ES 模块，Three.js r186 已内置于 `vendor/three/`，逻辑以固定 60 Hz 确定性步进运行。
@@ -42,6 +55,10 @@ python3 -m http.server 8000
 | 闪避 | L / Shift |
 | 无双 | I |
 | 旋转镜头 | 鼠标拖动 / Q E |
+| 暂停 / 操作说明 | Esc |
+| 开始 | Enter / 点击「出陣」 |
+
+![开始画面与完整操作说明](media/title.jpg)
 
 ## 选项
 
@@ -55,6 +72,7 @@ python3 -m http.server 8000
 index.html      入口、importmap、HUD 样式
 src/            core、hero、combat、crowd、musou、camera、vfx、post、world、audio、ui
 vendor/three/   Three.js r186
+media/          README 截图与 GIF
 ```
 
 ## 致谢与许可

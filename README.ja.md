@@ -2,6 +2,19 @@
 
 # Voxel Musou — 趙雲
 
+<p align="center">
+  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="趙雲 vs 魏兵 300 人——無双乱舞" width="100%"></a>
+</p>
+
+<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ ブラウザで今すぐプレイ — voxel-musou.vercel.app</a></b></p>
+
+| | |
+| --- | --- |
+| ![乱戦、400 ヒット超えの連撃](media/crowd.jpg) | ![チャージ攻撃の薙ぎ払い](media/sweep.jpg) |
+| 乱戦、400 ヒット超えの連撃 | チャージ攻撃の薙ぎ払い |
+| ![無双カットイン](media/musou.jpg) | ![無双の龍、150 撃破](media/dragon.jpg) |
+| 無双カットイン | 無双の龍、150 撃破 |
+
 ブラウザで遊べる、『真・三國無双』風のボクセルアクションゲームです。Three.js で制作しています。趙雲となり、槍を手に数百の魏軍兵士をなぎ倒しましょう。
 
 ビルド不要：素の ES モジュール構成で、Three.js r186 は `vendor/three/` に同梱。シミュレーションは固定 60 Hz の決定論的ステップで動作します。
@@ -42,6 +55,10 @@ python3 -m http.server 8000
 | 回避 | L / Shift |
 | 無双乱舞 | I |
 | カメラ回転 | マウスドラッグ / Q E |
+| ポーズ / 操作説明 | Esc |
+| スタート | Enter /「出陣」をクリック |
+
+![タイトル画面と操作説明](media/title.jpg)
 
 ## オプション
 
@@ -55,6 +72,7 @@ python3 -m http.server 8000
 index.html      エントリーポイント、importmap、HUD の CSS
 src/            core、hero、combat、crowd、musou、camera、vfx、post、world、audio、ui
 vendor/three/   Three.js r186
+media/          README 用スクリーンショットと GIF
 ```
 
 ## クレジットとライセンス

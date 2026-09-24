@@ -2,6 +2,19 @@
 
 # Voxel Musou — Zhao Yun (趙雲)
 
+<p align="center">
+  <a href="https://voxel-musou.vercel.app"><img src="media/gameplay.gif" alt="Zhao Yun vs 300 soldiers — the Musou" width="100%"></a>
+</p>
+
+<p align="center"><b><a href="https://voxel-musou.vercel.app">▶ Play in your browser — voxel-musou.vercel.app</a></b></p>
+
+| | |
+| --- | --- |
+| ![Crowd fight, 400+ hit chain](media/crowd.jpg) | ![Charge sweep](media/sweep.jpg) |
+| Crowd fight, 400+ hit chain | Charge sweep |
+| ![Musou cut-in](media/musou.jpg) | ![Musou dragon, 150 K.O.](media/dragon.jpg) |
+| Musou cut-in | Musou dragon, 150 K.O. |
+
 A browser-playable voxel action game in the style of Dynasty Warriors, built with Three.js. Take the field as Zhao Yun and cut through hundreds of Wei soldiers with his spear.
 
 No build step: plain ES modules, Three.js r186 vendored in `vendor/three/`, deterministic fixed 60 Hz simulation.
@@ -42,6 +55,10 @@ Keyboard and mouse; a gamepad is optional.
 | Dodge | L / Shift |
 | Musou | I |
 | Camera orbit | mouse drag / Q E |
+| Pause / controls | Esc |
+| Start | Enter / click 出陣 |
+
+![Title screen with the full controls](media/title.jpg)
 
 ## Options
 
@@ -55,6 +72,7 @@ Keyboard and mouse; a gamepad is optional.
 index.html      entry point, importmap, HUD CSS
 src/            core, hero, combat, crowd, musou, camera, vfx, post, world, audio, ui
 vendor/three/   Three.js r186
+media/          README screenshots and GIF
 ```
 
 ## Credits & License

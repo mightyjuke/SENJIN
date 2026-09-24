@@ -85,7 +85,19 @@ addEventListener('resize', () => {
   vw = innerWidth; vh = innerHeight;
   post.setSize(vw, vh);
   camRig.resize(vw, vh);
+  render();
 });
+
+// ---- start / pause menu (index.html #menu): the sim waits while it is open
+const menu = document.getElementById('menu'), go = document.getElementById('go'), hudEl = document.getElementById('hud');
+let paused;
+const setPaused = (v) => { paused = v; menu.hidden = !v; hudEl.hidden = v; input.sample(); };   // sample(): drop keys pressed on the menu
+go.addEventListener('click', () => setPaused(false));
+addEventListener('keydown', (e) => {
+  if (e.code === 'Escape') setPaused(!paused);
+  else if (paused && (e.code === 'Enter' || e.code === 'NumpadEnter')) setPaused(false);
+});
+addEventListener('blur', () => setPaused(true));
 
 // ---- loop
 let acc = 0, last = performance.now();
@@ -94,6 +106,7 @@ const frame = (now) => {
   // clamp at 0 too: the first rAF timestamp can precede the performance.now() taken at module init
   acc += Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
+  if (paused) { acc = 0; input.sample(); return; }
   let n = 0;
   while (acc >= 1 / 60 && n < 4) { step(); acc -= 1 / 60; n++; }
   if (n === 4) acc = 0;
@@ -101,5 +114,6 @@ const frame = (now) => {
 };
 
 start();
+setPaused(true);
 render();
 requestAnimationFrame(frame);
