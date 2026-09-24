@@ -332,7 +332,7 @@ export function createCrowd(game, grunts = 300) {
     }
   };
 
-  /** A strike starts: the guards nearest the striker raise their weapons and shout with him (reference build: 4-5 of ~30 raise
+  /** A strike starts: the guards nearest the striker raise their weapons and shout with him (SENJIN tuning: 4-5 of ~30 raise
    *  together), and surge half a step in. The view reads raiseF for the war-cry pose. */
   const rallyI = new Int32Array(8), rallyD = new Float64Array(8);
   function rally(s) {
