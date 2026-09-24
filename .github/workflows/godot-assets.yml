@@ -1,0 +1,53 @@
+name: Blender asset contracts
+on:
+  pull_request:
+    paths: ['art/**', 'godot/**', '.github/workflows/godot-assets.yml']
+  push:
+    branches: [main]
+    paths: ['art/**', 'godot/**', '.github/workflows/godot-assets.yml']
+permissions:
+  contents: read
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_SILENCE_ROOT_WARNING: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate glTF and install runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 art/tools/verify_exports.py
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          mkdir -p artifacts
+      - name: Validate import, skins, clips, sockets and crowd pooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/import.log
+          timeout 120 godot --headless --path godot --script res://tests/assets.gd 2>&1 | tee artifacts/assets.log
+          grep -q SENJIN_ASSET_TESTS_PASS artifacts/assets.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/import.log artifacts/assets.log; then exit 1; fi
+      - name: Render imported character preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 xvfb-run -a godot --path godot --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/asset_visual.gd -- "--capture=$PWD/artifacts/characters-godot.png" 2>&1 | tee artifacts/visual.log
+          grep -q SENJIN_ASSET_VISUAL_PASS artifacts/visual.log
+          test -s artifacts/characters-godot.png
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/visual.log; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-asset-checks-${{ github.sha }}
+          path: artifacts/
+          retention-days: 14
