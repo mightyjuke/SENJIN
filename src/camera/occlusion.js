@@ -64,7 +64,7 @@ export function fadeOccluder(material, near = 0.5) {
 }
 
 /**
- * Lens-side clear (render-only, per soldier): reference build keeps the ground between the lens and the hero open and the crowd
+ * Lens-side clear (render-only, per soldier): SENJIN keeps the ground between the lens and the hero open and the crowd
  * reads ahead of him. A soldier (alive, KO'd or flying) standing more than `hide` m in front of the hero along the
  * lens → hero ground axis is not drawn, whole; it reappears once back within `show` m (hysteresis: no flicker for
  * soldiers shuffling at the line). `extra` m pushes the line out (soldiers reeling from his hits stay readable a little
