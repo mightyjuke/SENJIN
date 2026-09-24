@@ -48,11 +48,20 @@ jobs:
           timeout 120 godot --headless --path godot --script res://tests/run.gd 2>&1 | tee artifacts/tests.log
           grep -q SENJIN_TESTS_PASS artifacts/tests.log
           if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/tests.log; then exit 1; fi
+      - name: Native menu touch integration
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 1
+        run: |
+          set -euo pipefail
+          timeout 90 xvfb-run -a godot --path godot --audio-driver Dummy --script res://tests/touch_ui.gd 2>&1 | tee artifacts/touch-ui.log
+          grep -q SENJIN_TOUCH_UI_PASS artifacts/touch-ui.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/touch-ui.log; then exit 1; fi
       - name: Headless gameplay smoke
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120 godot --headless --path godot --audio-driver Dummy -- --smoke 2>&1 | tee artifacts/smoke.log
+          timeout 120 godot --verbose --headless --path godot --audio-driver Dummy -- --smoke 2>&1 | tee artifacts/smoke.log
           grep -q SENJIN_SMOKE_PASS artifacts/smoke.log
           if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/smoke.log; then exit 1; fi
       - name: Rendered gameplay and touch overlay smoke

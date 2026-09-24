@@ -101,6 +101,10 @@ func handle_drag(index: int, point: Vector2) -> void:
 		_look_point = point
 
 func _input(event: InputEvent) -> void:
+	# Menu Controls consume the touch-to-mouse stream. Gameplay must NOT also
+	# interpret that synthetic click as an attack when the joystick is touched.
+	if event is InputEventMouse and event.device == -1:
+		return
 	if event is InputEventScreenTouch:
 		handle_touch(event.index,event.position,event.pressed and not event.canceled)
 	elif event is InputEventScreenDrag:

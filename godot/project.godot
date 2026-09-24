@@ -1,4 +1,4 @@
-; SENJIN native client. Open this file with Godot 4.7.2 (standard, not .NET).
+; SENJIN native client. Open with Godot 4.7.2 (standard, not .NET).
 config_version=5
 
 [application]
@@ -29,7 +29,8 @@ common/max_physics_steps_per_frame=5
 
 [input_devices]
 pointing/emulate_touch_from_mouse=false
-pointing/emulate_mouse_from_touch=false
+; Native menu Controls need the emulated mouse stream. Gameplay filters device -1.
+pointing/emulate_mouse_from_touch=true
 
 [audio]
 general/default_bus_layout="res://default_bus_layout.tres"
