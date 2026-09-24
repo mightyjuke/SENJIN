@@ -2,7 +2,7 @@
 // damage, hitstop, knockback / launch / juggle / spin physics and reaction states on enemies, KO, enemy strikes.
 // Emits: attack:swing, hit, hits, ko, enemy:attack, enemy:land.
 //
-// Feel targets (bench/notes/hit-feedback.md):
+// Feel targets (internal tuning notes):
 // - Hitstop is hero-local and scaled: 1 sf per mook tick + 1 per 5 extra victims (cap 4), 6-8 sf on heavy contact.
 //   Victims shudder for at most 3 sf, then react — the weight comes from their reactions, not a freeze.
 // - Launch: ≈1 s airborne with a ≈0.3 s apex float, tumbling to horizontal, one small rebound, down ≥ 2 s.
