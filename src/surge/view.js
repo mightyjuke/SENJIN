@@ -263,7 +263,7 @@ export function createSurgeView(scene, game, camera) {
       const r = 0.6 + 7.5 * Math.pow(hash01(i, 11), 1.6), a = hash01(i, 12) * 6.283;
       const y = ((hash01(i, 13) * 3.8 + time * (0.12 + 0.1 * hash01(i, 14))) % 3.8) + 0.1;
       const x = startX + Math.cos(a) * r + Math.sin(time * 0.7 + i) * 0.15, z = startZ + Math.sin(a) * r;
-      // r3: frozen-time motes are small crisp specks (reference build anchor), not bokeh: nothing within 2.5 m of the lens (DOF + bloom
+      // r3: frozen-time motes are small crisp specks (SENJIN tuning anchor), not bokeh: nothing within 2.5 m of the lens (DOF + bloom
       // turned near motes into big white discs that lifted the dark intro to 1.3× gameplay luma), ≤ 3 cm, below bloom level
       const w = (still ? 0.018 + 0.012 * hash01(i, 15) : 0.025 + 0.03 * hash01(i, 15)) * moteK * ramp(dist(x, y, z), 2.5, 4.5);
       _q.setFromAxisAngle(UP, hy);
@@ -302,7 +302,7 @@ export function createSurgeView(scene, game, camera) {
       fx.setColorAt(A0 + i, _c.setRGB(0.32 * e, 0.66 * e, 0.92 * e));
       any = true;
     }
-    // finisher ring wave: a thin crackling band of light voxels at waist height riding the sim wave front (reference build's
+    // finisher ring wave: a thin crackling band of light voxels at waist height riding the sim wave front (SENJIN tuning's
     // horizontal lightning ring). r3: was a 0.5–1.6 m wall of 144 additive columns — bunched in a 2–4 m circle round him
     // and DOF-blurred, it was a teal fog over the first 0.2 s of the finisher that hid the vanguard completely
     const w0 = t - M.finisher, ringK = w0 >= 0 ? 1 - ramp(w0, M.waveFrames * 0.7, M.waveFrames + 10) : 0;
@@ -325,11 +325,11 @@ export function createSurgeView(scene, game, camera) {
 
   function updateGrade(t) {
     const M = SURGE;
-    // dim: +≈20 % flash on the cut frame, full dim 2 frames later (reference build: 1–3 frame flash, dim within 3), lifts during the
+    // dim: +≈20 % flash on the cut frame, full dim 2 frames later (SENJIN tuning: 1–3 frame flash, dim within 3), lifts during the
     // chase run, then a light cool tint holds through the payoff (teal-white burst instead of the golden sun haze) and
     // warms back to the golden-hour grade as control returns.
     // r3: the dim is a teal-night vignette (display-space multiply) centred on the vanguard — ≈0.7× on him, ≈0.27× at the
-    // frame edge — so the intro sits at ≈0.6× gameplay luma (reference build 0.52–0.77×) while his ivory lamellar stays readable
+    // frame edge — so the intro sits at ≈0.6× gameplay luma (SENJIN tuning 0.52–0.77×) while his ivory lamellar stays readable
     // (the pose shot is ≈1.7× the pre-press gameplay frame undimmed, so the cut frame already carries part of the dim)
     const dim = (t < 1 ? 0.45 : t < 2 ? 0.8 : 1) * (1 - ramp(t, M.chase + 4, M.contact));
     const cool = 0.45 * ramp(t, M.chase + 4, M.contact) * (1 - ramp(t, M.contact + 8, M.contact + 30));   // tint the dark-to-bright cut only, not the payoff
