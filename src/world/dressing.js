@@ -1,5 +1,5 @@
 // Battlefield dressing: fictional enemy/ally banners with wind-driven cloth, fires (voxel flames + embers), smoke columns, and the
-// Wei camp ring (palisade, tents, barricades). Everything animates as a pure function of render time → capture-
+// enemy camp ring (palisade, tents, barricades). Everything animates as a pure function of render time → capture-
 // deterministic; nothing touches sim state.
 import * as THREE from 'three';
 import { boxesGeometry, shade } from '../core/voxel.js';
@@ -225,7 +225,7 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
     scene.add(c); cloths.push(c);
     return c;
   };
-  /** Wei standard: pole + crossbar, cloth hangs from the bar; faces the arena centre. */
+  /** Enemy standard: pole + crossbar, cloth hangs from the bar; faces the arena centre. */
   const standard = (x, z, s = 1, mat = mats.enemy, P = 8.5 * s) => {
     const W = 2.3 * s, Hc = 4.3 * s;
     const yaw = Math.atan2(-x, -z) + r.range(-0.35, 0.35);                 // cloth plane faces the centre
@@ -236,7 +236,7 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
     poles.push({ s: [0.12, 0.8 * s, 0.12], p: [x, P + 0.4 * s, z], c: 0xb8b0a0 });
     addCloth(mat, W, Hc, 'hang', x + cx * 0.12, P - 0.4 * s, z + cz * 0.12, yaw);
   };
-  // Wei standards around the arena rim and along the camp palisade (outside the fighting area)
+  // Enemy standards around the arena rim and along the camp palisade (outside the fighting area)
   for (let i = 0; i < 22; i++) {
     const a = (i / 22) * Math.PI * 2 + r.range(-0.08, 0.08);
     if (Math.cos(a) > 0.62) continue;                                    // keep the castle view clear
@@ -265,7 +265,7 @@ export function buildDressing(scene, { wallZ, gateX, castle, fieldFires }) {
   flag(castle.cornerX + 4, castle.towerH, wallZ - 0.5, 4, mats.red);
   for (const [x, z, h, s] of castle.towers) flag(x + 1.4 * s, h + 1, z - 1.4 * s, 3, mats.red);
 
-  // Wei reserve army massed beyond the palisade, out to the haze (instanced, idle bob) — "troops to the horizon"
+  // Enemy reserve army massed beyond the palisade, out to the haze (instanced, idle bob) — "troops to the horizon"
   const troops = [];
   for (let f = 0; f < 26; f++) {
     const a = r.range(0, Math.PI * 2), R = r.range(76, 170), cx = Math.sin(a) * R, cz = Math.cos(a) * R, face = Math.atan2(-cx, -cz);
