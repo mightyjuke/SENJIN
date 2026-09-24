@@ -58,7 +58,7 @@ export function createHud(root, game, { camera = null } = {}) {
     <div class="h-copy">長槍所向<br>百軍皆破</div>
     <div class="h-player"><div class="badge"><canvas width="20" height="20"></canvas></div><div class="name">先陣</div>
       <div class="bar hp"><em></em><i></i></div>
-      <div class="mu"><div><i></i></div><div><i></i></div><div><i></i></div><span>破陣</span></div></div>
+      <div class="mu"><div><i></i></div><div><i></i></div><div><i></i></div><div><i></i></div><span>破陣</span></div></div>
     <div class="h-ko"><div class="num"><b class="dig" data-t="0"><span>0</span></b><u></u></div><small><em>擊破</em>K.O. COUNT</small></div>`;
   const $ = (s) => root.querySelector(s), $$ = (s) => [...root.querySelectorAll(s)];
   const intro = $('.h-intro'), player = $('.h-player'), hpI = $('.hp i'), hpE = $('.hp em'), muSeg = $$('.mu i'), mu = $('.mu');
@@ -131,7 +131,7 @@ export function createHud(root, game, { camera = null } = {}) {
       const calm = 1 - 0.45 * clamp01((f - S.actF - 240) / 40) * (game.surge.ready() ? 0 : 1);
       set(player, 'opacity', calm.toFixed(2)); set(mapEl, 'opacity', calm.toFixed(2));
 
-      // HP (teal, white lag bar) + 3-segment surge gauge
+      // HP + original four-segment Surge gauge
       const hp = h.hp / h.hpMax;
       S.lagHp = f - S.hurtF < 20 ? S.lagHp : Math.max(hp, S.lagHp - 0.008 * df);
       if (S.lagHp < hp) S.lagHp = hp;
@@ -139,13 +139,13 @@ export function createHud(root, game, { camera = null } = {}) {
       set(hpE, 'transform', `scaleX(${S.lagHp.toFixed(4)})`);
       player.classList.toggle('low', hp < 0.3);
       player.classList.toggle('hurt', f - S.hurtF < 12);
-      const m3 = h.surge / h.surgeMax * 3;
-      muSeg.forEach((el, k) => set(el, 'transform', `scaleX(${(Math.floor(clamp01(m3 - k) * 32) / 32).toFixed(4)})`));  // pixel-stepped fill
+      const m4 = h.surge / h.surgeMax * 4;
+      muSeg.forEach((el, k) => set(el, 'transform', `scaleX(${(Math.floor(clamp01(m4 - k) * 32) / 32).toFixed(4)})`));  // pixel-stepped fill
       const full = game.surge.ready() && !inSurge;                   // surge part r3: ready at one full segment (one Surge spends one)
       mu.classList.toggle('full', full);
-      if (full) {                                                    // ready: glow pulse + glint sweeping the 3 segments
+      if (full) {                                                    // ready: glow pulse + glint sweeping the four segments
         mu.style.setProperty('--p', (0.5 + 0.5 * Math.sin(f * 0.12)).toFixed(2));
-        const sw = (f % 90) / 50 * 3.6 - 0.3;
+        const sw = (f % 90) / 50 * 4.6 - 0.3;
         muSeg.forEach((el, k) => el.style.setProperty('--s', `${((sw - k) * 100).toFixed(1)}%`));
       }
       mu.classList.toggle('active', inSurge);
