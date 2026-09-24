@@ -7,9 +7,9 @@ import { MOVES } from './moves.js';
 
 export const LOCO = {
   runSpeed: 8.5,        // m/s = 4.6 H/s (SENJIN tuning ≈ 4.6 H/s)
-  accel: 150,           // m/s²: standstill → top speed in ~3 sim frames (benchmark shows no ramp)
+  accel: 150,           // m/s²: standstill → top speed in ~3 sim frames (SENJIN tuning target has no perceptible ramp)
   decel: 60,            // m/s²: release → stop in ~8 frames (short planted skid)
-  turnRate: 36,         // rad/s: 180° in 5 sim frames (benchmark ≤ 6)
+  turnRate: 36,         // rad/s: 180° in 5 sim frames (SENJIN target ≤ 6)
   turnSlow: 0.3,        // fraction of speed shed at the peak of a 180° snap turn (≈4 H/s straight away)
   dashAfter: 14,        // frames of running before attack becomes a dash attack
   // dive roll: 24 frames (0.40 s) total, run-cancel at 20 (0.33 s), attack at 14, re-dodge at 16
