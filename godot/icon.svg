@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- SENJIN development icon. Original geometric artwork, MIT licensed. -->
+  <rect width="1024" height="1024" fill="#22212b"/>
+  <path d="M512 100 840 274 792 692 512 924 232 692 184 274Z" fill="#a13e37"/>
+  <path d="M512 175 763 309 724 651 512 828 300 651 261 309Z" fill="#302b33"/>
+  <path d="M512 226 644 470 546 446 546 740 478 740 478 446 380 470Z" fill="#e7bd80"/>
+  <path d="m319 560 113 63v65l-107-67zm386 0-113 63v65l107-67z" fill="#c2634e"/>
+</svg>

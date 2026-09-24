@@ -14,6 +14,7 @@ var quality: OptionButton
 var audio_toggle: CheckButton
 var _credits: AcceptDialog
 var _safe: Rect2 = Rect2(0,0,1280,720)
+var _hud_panel: StyleBoxFlat
 
 func _ready() -> void:
 	process_mode=Node.PROCESS_MODE_ALWAYS
@@ -32,6 +33,7 @@ func bind(sim: RefCounted, input_node: Node) -> void:
 
 func _build_menu() -> void:
 	menu=PanelContainer.new()
+	menu.size=Vector2(670,590)
 	add_child(menu)
 	var style:=StyleBoxFlat.new()
 	style.bg_color=Color(0.085,0.075,0.105,0.97)
@@ -43,9 +45,18 @@ func _build_menu() -> void:
 	style.content_margin_top=22
 	style.content_margin_bottom=22
 	menu.add_theme_stylebox_override("panel",style)
+	# A scroll boundary prevents wrapped labels from forcing a viewport-sized
+	# menu to thousands of pixels tall during the initial zero-width layout.
+	var scroll:=ScrollContainer.new()
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus=true
+	scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	menu.add_child(scroll)
 	var column:=VBoxContainer.new()
+	column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation",12)
-	menu.add_child(column)
+	scroll.add_child(column)
 	heading=Label.new()
 	heading.text="SENJIN"
 	heading.add_theme_font_size_override("font_size",42)
@@ -138,6 +149,7 @@ func set_paused(value: bool) -> void:
 		resume_button.text="ENTER BATTLE" if battle.frame==0 else "RESUME"
 		resume_button.disabled=battle.game_over
 		description.text="Wave %d  /  K.O. %d  /  Best %d\nHold ATTACK for combos; CHARGE branches into finishers.\nEvery full Surge segment unleashes a formation breaker." % [battle.wave,battle.kos,best_kos]
+		_layout()
 
 func _process(_delta:float) -> void:
 	queue_redraw()
@@ -150,7 +162,7 @@ func _draw() -> void:
 		return
 	var start: Vector2=_safe.position
 	var end: Vector2=_safe.end
-	draw_style_box(_panel(),Rect2(start+Vector2(0,0),Vector2(310,115)))
+	draw_style_box(_panel(),Rect2(start,Vector2(310,115)))
 	_text(start+Vector2(14,29),"SENJIN  /  VANGUARD",22)
 	var hp:=Rect2(start+Vector2(14,42),Vector2(280,13))
 	draw_rect(hp,Color("35262a"))
@@ -163,7 +175,6 @@ func _draw() -> void:
 	_text(Vector2(_safe.get_center().x-100,start.y+30),"WAVE %d    K.O. %d" % [battle.wave,battle.kos],23)
 	if battle.combo>1:
 		_text(Vector2(_safe.get_center().x-70,start.y+61),"%d HIT CHAIN" % battle.combo,21,Color("dfad70"))
-	# A compact minimap has no texture or platform dependency.
 	var map_rect:=Rect2(Vector2(end.x-170,start.y+74),Vector2(150,150))
 	draw_style_box(_panel(),map_rect)
 	for i in range(battle.count):
@@ -192,7 +203,8 @@ func _draw() -> void:
 		_text(Vector2(start.x,end.y-15),"WASD move  /  J attack  K charge  Space jump  L dodge  I Surge  /  Esc pause",17)
 
 func _panel() -> StyleBoxFlat:
-	var style:=StyleBoxFlat.new()
-	style.bg_color=Color(0.07,0.06,0.10,0.75)
-	style.set_corner_radius_all(8)
-	return style
+	if _hud_panel==null:
+		_hud_panel=StyleBoxFlat.new()
+		_hud_panel.bg_color=Color(0.07,0.06,0.10,0.75)
+		_hud_panel.set_corner_radius_all(8)
+	return _hud_panel
