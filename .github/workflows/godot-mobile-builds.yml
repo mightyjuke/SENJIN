@@ -92,8 +92,11 @@ jobs:
           retention-days: 14
 
   ios-native:
-    runs-on: macos-14
+    # Godot's current Swift runtime objects cannot link against Xcode 15.4.
+    runs-on: macos-26
     timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - name: Install matching engine and iOS template
@@ -109,6 +112,8 @@ jobs:
           unzip -q /tmp/templates.tpz 'templates/ios.zip' -d /tmp/templates
           cp /tmp/templates/templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable/"
           mkdir -p godot/exports/ios artifacts
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version | tee artifacts/ios-toolchain.txt
           # Sentinel for unsigned project generation, not an Apple team or credential.
           python3 - <<'PY'
           from pathlib import Path
@@ -143,8 +148,6 @@ jobs:
           simarch=$(uname -m)
           if ! echo "$arches" | grep -qw "$simarch"; then simarch=$(echo "$arches" | awk '{print $1}'); fi
           case "$simarch" in arm64|x86_64) ;; *) echo "Unsupported simulator slice: $simarch"; exit 1;; esac
-          # Some template releases contain an x86_64-only simulator library.
-          # Do not force the host's arm64 architecture onto that library.
           xcodebuild -project "$project" -scheme "$scheme" -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/senjin-derived ARCHS="$simarch" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' build 2>&1 | tee artifacts/ios-build.log
           app=$(find /tmp/senjin-derived/Build/Products -maxdepth 3 -name '*.app' -print -quit)
           test -n "$app"
