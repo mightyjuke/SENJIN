@@ -685,7 +685,7 @@ export function createVfx(scene, game, world) {
   // KO: the soldier visibly breaks apart — chunky voxel debris in his own colours plus helmet / torso / shield blocks
   on('ko', (e) => {
     const pal = e.officer ? OFFICER : SOLDIER;
-    // surge part r2: ~55 KOs land inside 1 s of Surge; full debris per KO buried the launch fan and the dragon once the
+    // surge part r2: ~55 KOs land inside 1 s of Surge; full debris per KO buried the launch fan and the storm ribbon once the
     // payoff stopped being a whiteout, so a Surge KO (not an officer) sheds a few smaller chunks and no body blocks
     const mk = game.hero.state === 'surge' && !e.officer;
     // a KO within ≈ 5 m of the lens sheds fewer, smaller chunks (big blocks there covered the frame)
@@ -794,7 +794,7 @@ export function createVfx(scene, game, world) {
     const h = game.hero, fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), side = (e.n % 2 ? 1 : -1) * 0.25;
     const y = Math.min(1.8, Math.max(0.8, tipNow.y));
     // surge part r2: ~2 ticks land per frame and every streak runs from the vanguard along the rush line — right over the
-    // dragon that now surges out of the spear — so they piled into a white bar that hid it and the launch fan: streaks
+    // storm ribbon that now surges from the weapon — so they piled into a white bar that hid it and the launch fan: streaks
     // only on the contact thrust and every other sweep, slimmer; sparks elsewhere
     if (!(e.stage === 'contact' || (e.stage === 'rush' && e.n % 6 === 0))) { needleBurst(e.x, e.y, e.z, 3, fx, fz, 12, NEEDLE_COOL, 0.05); return; }
     beam(STREAK, h.x + fz * side + fx * 0.6, y, h.z - fx * side + fz * 0.6, fx, 0, fz, 6, 0.4, 0.2, TEAL);
