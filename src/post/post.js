@@ -204,7 +204,7 @@ export function createPost({ canvas, enabled = true, width, height }) {
       }`;
     // bloom keeps its source's hue (orange fire → orange halo, blue arc → blue halo); the wide mips lean only a little
     // warm, the grade already carries the golden hour. The two widest mips are faint: at full weight a large bright mass
-    // (the Surge payoff's dragon + light shards) spread into a screen-wide pale-blue veil; light stays a local glow.
+    // (the Surge payoff's storm ribbon + light shards) spread into a screen-wide pale-blue veil; light stays a local glow.
     bloom.bloomTintColors = [v3([0.95, 1, 1.08]), v3([1, 0.97, 0.93]), v3([0.45, 0.42, 0.39]), v3([0.12, 0.11, 0.1]), v3([0.03, 0.026, 0.023])];
     const dofU = { uFocus: { value: 7 }, uNearScale: { value: 1 }, uFarScale: { value: 1 }, uBandN: { value: 3 }, uBandF: { value: 5 } };   // shared by dof + final
     atmos = new FullScreenQuad(mat(AtmosShader, {
