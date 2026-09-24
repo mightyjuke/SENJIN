@@ -49,7 +49,7 @@ export function createHud(root, game, { camera = null } = {}) {
       <div class="keys"><kbd>WASD</kbd> 移動 move · <kbd>J</kbd> 攻擊 attack · <kbd>K</kbd> 蓄力 charge<br>
         <kbd>Space</kbd> 跳躍 jump · <kbd>L</kbd> 閃避 dodge · <kbd>I</kbd> 破陣 surge · <kbd>Q</kbd><kbd>E</kbd> 視角 · <kbd>H</kbd> 說明</div></div>
     <div class="h-target"><i class="seal">將</i><b></b><span></span><div class="bar"><em></em><i></i></div><strong>擊破</strong></div>
-    <div class="h-map"><div class="morale"><i></i><span>盟</span><span>敵</span></div><canvas width="200" height="200"></canvas><i class="seal">長坂</i></div>
+    <div class="h-map"><div class="morale"><i></i><span>盟</span><span>敵</span></div><canvas width="200" height="200"></canvas><i class="seal">荒野</i></div>
     <div class="h-offs">${OFFICERS.map(([zh, en]) => `<div class="off"><i class="ld"></i><div class="mk">▼▼</div><div class="bd"><b>${zh}</b><span>${en}</span><div class="bar"><em></em><i></i></div></div></div>`).join('')}</div>
     <div class="h-chain"><div class="num"><b class="dig" data-t="0"><span>0</span></b><u></u><u></u><u></u></div><small><em>連擊</em>CHAIN</small></div>
     <div class="h-mile"><b class="dig" data-t="50"><span>50</span></b><i class="seal">擊破</i></div>
@@ -90,9 +90,9 @@ export function createHud(root, game, { camera = null } = {}) {
   // (y 64-70 %) sit apart, so neither cancels the other. Dialogue holds 5 s like reference build.
   const banner = (html, en, dur = 150) => { if (S.bandQ.length < 3) S.bandQ.push({ html, en, dur }); };
   const say = (zh, en, dur = 300) => { S.dlg = { zh, en, f: game.frame, dur }; };
-  on('scenario', (e) => { reset(); resetText(); if (e.name === 'crowd' || e.name === 'arena') S.dlg = { zh: '防線在我身後，誰也別想越過！', en: 'My lord\'s son is in my care. None of you shall pass!', f: 185, dur: 300 }; });
+  on('scenario', (e) => { reset(); resetText(); if (e.name === 'crowd' || e.name === 'arena') S.dlg = { zh: '防線在我身後，誰也別想越過！', en: 'The line is under my protection. None of you shall pass!', f: 185, dur: 300 }; });
   on('crowd:wave', (e) => {
-    if (game.frame - S.waveF > 600) { S.waveF = game.frame; banner('<em>敵軍</em>援兵 到着', 'Wei reinforcements have arrived!', 130); }
+    if (game.frame - S.waveF > 600) { S.waveF = game.frame; banner('<em>敵軍</em>援兵 到着', 'Enemy reinforcements have arrived!', 130); }
     S.waves.push({ x: e.x, z: e.z, f: game.frame });
   });
   on('hit', (e) => { S.actF = game.frame; if (e.officer) { S.tgt = e.i; S.tgtF = game.frame; } });
