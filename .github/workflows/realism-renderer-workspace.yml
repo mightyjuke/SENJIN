@@ -1,0 +1,33 @@
+name: Realism software-renderer workspace
+on:
+  push:
+    branches: [art/realistic-pbr-pass]
+    paths: [.github/workflows/realism-renderer-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  driver:
+    if: github.ref == 'refs/heads/art/realistic-pbr-pass'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Package matching Debian software Vulkan driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/output"
+          docker run --rm -v "$PWD/output:/output" debian:trixie-slim bash -c '
+            set -euo pipefail
+            apt-get update -qq
+            cd /tmp
+            apt-get download mesa-vulkan-drivers
+            dpkg-deb -x mesa-vulkan-drivers*.deb /tmp/mesa
+            tar -C /tmp/mesa -czf /output/mesa-lavapipe.tar.gz usr/lib/x86_64-linux-gnu/libvulkan_lvp.so usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+            dpkg-deb -f mesa-vulkan-drivers*.deb Version Depends > /output/package-info.txt
+            sha256sum /output/mesa-lavapipe.tar.gz > /output/SHA256SUMS
+          '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realism-software-vulkan
+          path: output/
+          retention-days: 1
