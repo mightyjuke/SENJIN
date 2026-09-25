@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "license": "MIT",
+  "source": "Original scripted Blender geometry and procedural texture fields",
+  "authoring": "5.2.0 LTS",
+  "units": "metres",
+  "up": "+Y",
+  "forward": "+Z",
+  "normal_bake": "selected-to-active, subdivided displaced source",
+  "assets": [
+    {
+      "file": "polearm.glb",
+      "bytes": 5678076,
+      "sha256": "cc02fe74b0f8db9d93238a8ca44f72be8600246dff55e96bfe8441bf5117c5d5",
+      "triangles": 23968,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "file": "vanguard.glb",
+      "bytes": 17943116,
+      "sha256": "4e8c391048a2a532cefac3addc68a95bc3b2bcd0176b65a4ded36b972588a1b1",
+      "triangles": 65628,
+      "meshes": 2,
+      "materials": 2,
+      "images": 6,
+      "bones": 18,
+      "animations": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6",
+        "dash",
+        "Death",
+        "Dodge",
+        "Hit",
+        "Idle",
+        "jatk",
+        "jc",
+        "Jump",
+        "Land",
+        "n1",
+        "n2",
+        "n3",
+        "n4",
+        "n5",
+        "n6",
+        "Run",
+        "Surge"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "license": "MIT",
+  "origin": "original procedural fields; not downloaded",
+  "maps": [
+    {
+      "file": "ground_albedo.png",
+      "sha256": "d9850181043fca49077790b95c8cf6f5025168a22b070367a544d0333833a09a",
+      "bytes": 473250
+    },
+    {
+      "file": "ground_normal.png",
+      "sha256": "c0538d4f012c105f76834445df016bd93d32f122f045e82620557ec9c00765f9",
+      "bytes": 1271708
+    },
+    {
+      "file": "ground_orm.png",
+      "sha256": "294f142a440b38e96012673cc3b15ffb42d0f6a8caab0841a5fb2005ee0e197f",
+      "bytes": 597548
+    },
+    {
+      "file": "hero_albedo.png",
+      "sha256": "90e7650d39249a90d7e48ccc642a79594e623888cca2107f3ff96ecb266395ef",
+      "bytes": 1737848
+    },
+    {
+      "file": "hero_height.png",
+      "sha256": "bfedf91a59353c0e0169aa1ce5b32a1684b01466f9d2ba33ccbd885dd02ddd1b",
+      "bytes": 1365086
+    },
+    {
+      "file": "hero_normal.png",
+      "sha256": "6cb485706e1b1a24f97bf22955306a19541dae6ee9a4875073f69262aaff1493",
+      "bytes": 3977904
+    },
+    {
+      "file": "hero_orm.png",
+      "sha256": "6b2d2f7b57b171e4b63c083bceda9930cace3bae44983876381a132e34506989",
+      "bytes": 2261335
+    },
+    {
+      "file": "weapon_albedo.png",
+      "sha256": "7cbea0879cdba1b73f816c6b6adb8d87a42f72d5290eac0d0a16bf073b021cbf",
+      "bytes": 1634905
+    },
+    {
+      "file": "weapon_height.png",
+      "sha256": "03659d5385a7d32ed63c0dd6466f6d7c9bb8385e8a196982bc4248fee33634f2",
+      "bytes": 1201985
+    },
+    {
+      "file": "weapon_normal.png",
+      "sha256": "0601da227079dba2d0f7c9c9b652672d4a0b9278cb16c3033a9158844d0c481c",
+      "bytes": 3360806
+    },
+    {
+      "file": "weapon_orm.png",
+      "sha256": "809032fb0bf6a5a30369ec872bf1471f6637f9f0ada1f44a1ae6b037bd526eea",
+      "bytes": 1941595
+    }
+  ]
+}
