@@ -1,0 +1,98 @@
+name: Generate Blender asset kit
+on:
+  push:
+    branches: [art/blender-godot-pipeline]
+    paths:
+      - art/tools/build_assets.py
+      - .github/workflows/blender-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: senjin-art-generation
+  cancel-in-progress: false
+jobs:
+  author:
+    if: github.ref == 'refs/heads/art/blender-godot-pipeline'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GODOT_SILENCE_ROOT_WARNING: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned authoring and verification tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libxi6 libxfixes3 libxrender1 libxkbcommon0
+          curl -fL --retry 3 --connect-timeout 20 --max-time 360 https://download.blender.org/release/Blender5.2/blender-5.2.0-linux-x64.tar.xz -o /tmp/blender.tar.xz
+          echo '96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48  /tmp/blender.tar.xz' | sha256sum -c -
+          tar -xf /tmp/blender.tar.xz -C /tmp
+          sudo ln -s /tmp/blender-5.2.0-linux-x64/blender /usr/local/bin/blender
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+          blender --version
+          godot --version
+          mkdir -p artifacts
+      - name: Generate editable Blender sources and glTF exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender -b -t 2 --python art/tools/build_assets.py -- --root "$PWD" --render 2>&1 | tee artifacts/blender.log
+          grep -q 'SENJIN_ASSETS_PASS 21' artifacts/blender.log
+          python3 art/tools/verify_exports.py | tee artifacts/glb-contract.log
+          test "$(find art/blender -name '*.blend' | wc -l)" -eq 21
+      - name: Import and validate the native asset integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/import.log; then exit 1; fi
+          timeout 120 godot --headless --path godot --script res://tests/assets.gd 2>&1 | tee artifacts/assets.log
+          grep -q SENJIN_ASSET_TESTS_PASS artifacts/assets.log
+          timeout 120 godot --headless --path godot --script res://tests/run.gd 2>&1 | tee artifacts/regression.log
+          grep -q SENJIN_TESTS_PASS artifacts/regression.log
+          timeout 120 xvfb-run -a godot --path godot --audio-driver Dummy --script res://tests/touch_ui.gd 2>&1 | tee artifacts/touch.log
+          grep -q SENJIN_TOUCH_UI_PASS artifacts/touch.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/assets.log artifacts/regression.log artifacts/touch.log; then exit 1; fi
+      - name: Render real character and gameplay previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120 xvfb-run -a godot --path godot --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/asset_visual.gd -- "--capture=$PWD/art/previews/characters-godot.png" 2>&1 | tee artifacts/visual.log
+          grep -q SENJIN_ASSET_VISUAL_PASS artifacts/visual.log
+          timeout 180 xvfb-run -a godot --path godot --rendering-method gl_compatibility --audio-driver Dummy -- --smoke --touch "--capture=$PWD/art/previews/native-gameplay.png" 2>&1 | tee artifacts/gameplay.log
+          grep -q SENJIN_SMOKE_PASS artifacts/gameplay.log
+          test -s art/previews/characters-godot.png
+          test -s art/previews/native-gameplay.png
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/visual.log artifacts/gameplay.log; then exit 1; fi
+      - name: Commit generated files only to the authorized art branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/art/blender-godot-pipeline
+          git fetch origin art/blender-godot-pipeline
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo 'Branch moved; refusing to overwrite newer work'; exit 1; }
+          git add -- art/blender/*.blend godot/assets/models/*.glb godot/assets/models/*.glb.import godot/assets/models/manifest.json art/previews/*.png
+          # No force push, no source-script changes, no engine caches, no binaries other than art.
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Build and validate the Blender Ember asset kit'
+            git push origin HEAD:refs/heads/art/blender-godot-pipeline
+          fi
+          git rev-parse HEAD | tee artifacts/generated-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-blender-kit-${{ github.sha }}
+          path: |
+            art/blender/*.blend
+            art/previews/*.png
+            art/LICENSE
+            godot/assets/models/
+            artifacts/
+          retention-days: 14
