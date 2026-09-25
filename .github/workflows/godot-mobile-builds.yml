@@ -3,9 +3,9 @@ name: Godot Mobile Builds
 on:
   push:
     branches: ['port/godot-mobile', main]
-    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml']
+    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml', '.github/scripts/*android_manifest.py']
   pull_request:
-    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml']
+    paths: ['godot/**', '.github/workflows/godot-mobile-builds.yml', '.github/scripts/*android_manifest.py']
   workflow_dispatch:
 
 permissions:
@@ -18,17 +18,22 @@ concurrency:
 env:
   GODOT_VERSION: 4.7.2
   GODOT_SILENCE_ROOT_WARNING: 1
+  # Match platform/android/java/app/config.gradle in the pinned engine.
+  ANDROID_BUILD_TOOLS: 36.1.0
+  ANDROID_NDK_VERSION: 29.0.14206865
 
 jobs:
   android-debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - name: Test compiled manifest validator
+        run: python3 -m unittest discover -s .github/scripts -p 'test_android_manifest.py' -v
       - name: Install matching engine, export templates and Android SDK
         shell: bash
         run: |
@@ -44,7 +49,7 @@ jobs:
           export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           manager=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f -print -quit)
           test -x "$manager"
-          "$manager" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          "$manager" "platform-tools" "build-tools;${ANDROID_BUILD_TOOLS}" "platforms;android-36" "ndk;${ANDROID_NDK_VERSION}"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           mkdir -p "$HOME/.config/godot"
           python3 - <<'PY'
@@ -65,22 +70,32 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path godot --editor --import --quit 2>&1 | tee artifacts/android-import.log
-          godot --headless --path godot --export-debug 'Android Debug' 2>&1 | tee artifacts/android-export.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/android-import.log; then exit 1; fi
+          # Compile the generated manifest with Gradle/AAPT2, not prebuilt-APK string injection.
+          # CI starts from a clean checkout. Local users install the matching template once.
+          godot --headless --path godot --install-android-build-template --export-debug 'Android Debug' 2>&1 | tee artifacts/android-export.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/android-export.log; then exit 1; fi
           test -s godot/exports/android/senjin-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose godot/exports/android/senjin-debug.apk | tee artifacts/android-signature.txt
-          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging godot/exports/android/senjin-debug.apk | tee artifacts/android-package.txt
+          "$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS}/apksigner" verify --verbose godot/exports/android/senjin-debug.apk | tee artifacts/android-signature.txt
+          # Keep the strict check that originally caught the malformed feature values.
+          "$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS}/aapt" dump badging godot/exports/android/senjin-debug.apk 2>&1 | tee artifacts/android-package.txt
           grep -q "package: name='org.mightyjuke.senjin'" artifacts/android-package.txt
+          python3 .github/scripts/verify_android_manifest.py godot/exports/android/senjin-debug.apk | tee artifacts/android-manifest-contract.txt
           python3 - <<'PY'
-          import zipfile
-          with zipfile.ZipFile('godot/exports/android/senjin-debug.apk') as apk:
+          import hashlib, zipfile
+          from pathlib import Path
+          path = Path('godot/exports/android/senjin-debug.apk')
+          with zipfile.ZipFile(path) as apk:
               paths = apk.namelist()
               assert any(p.startswith('lib/arm64-v8a/') and p.endswith('.so') for p in paths)
               assert any(p.startswith('lib/x86_64/') and p.endswith('.so') for p in paths)
               assert any('legal/NOTICE.txt' in p for p in paths), 'Native attribution missing'
+              assert any('assets/realism/LICENSE.txt' in p for p in paths), 'PBR attribution missing'
               assert not any('/vendor/three/' in p or 'brush.woff2' in p for p in paths)
-          print('SENJIN_ANDROID_APK_PASS')
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          Path('artifacts/android-sha256.txt').write_text(digest + '  senjin-debug.apk\n')
+          print('SENJIN_ANDROID_APK_PASS ' + digest)
           PY
-          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/android-export.log; then exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

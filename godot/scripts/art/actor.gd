@@ -12,8 +12,9 @@ var _blend_elapsed: float = 1.0
 var _blend_duration: float = 0.06
 var _last_sample_time: float = 0.0
 
-func build(asset_id: String) -> void:
-	var model: Node3D = Assets.scene(asset_id).instantiate() as Node3D
+func build(asset_id: String, scene_override: PackedScene = null) -> void:
+	var selected: PackedScene = Assets.scene(asset_id) if scene_override == null else scene_override
+	var model: Node3D = selected.instantiate() as Node3D
 	add_child(model)
 	var players: Array[Node] = model.find_children("*", "AnimationPlayer", true, false)
 	var skeletons: Array[Node] = model.find_children("*", "Skeleton3D", true, false)

@@ -1,0 +1,87 @@
+name: Generate Iron Oath PBR assets
+on:
+  push:
+    branches: [art/realistic-pbr-pass]
+    paths: ['art/realism/build_realism.py', 'art/realism/textures.py', '.github/workflows/realism-generate.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: senjin-realism-authoring
+  cancel-in-progress: false
+jobs:
+  author:
+    if: github.ref == 'refs/heads/art/realistic-pbr-pass'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GODOT_SILENCE_ROOT_WARNING: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-pinned authoring tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-vulkan-drivers libegl1 libxi6 libxfixes3 libxrender1 libxkbcommon0 ffmpeg python3-pil python3-numpy
+          curl -fL --retry 3 --connect-timeout 20 --max-time 360 https://download.blender.org/release/Blender5.2/blender-5.2.0-linux-x64.tar.xz -o /tmp/blender.tar.xz
+          echo '96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48  /tmp/blender.tar.xz' | sha256sum -c -
+          tar -xf /tmp/blender.tar.xz -C /tmp
+          sudo ln -s /tmp/blender-5.2.0-linux-x64/blender /usr/local/bin/blender
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/godot.zip
+          echo 'cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  /tmp/godot.zip' | sha256sum -c -
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+          mkdir -p artifacts/realism
+          blender --version
+          godot --version
+      - name: Rebuild locally reviewed sources and bake game textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 art/realism/textures.py --root "$PWD" | tee artifacts/realism/textures.log
+          blender -b -t 2 --python art/realism/build_realism.py -- --root "$PWD" --bake --render 2>&1 | tee artifacts/realism/blender.log
+          grep -q SENJIN_REALISM_BUILD_PASS artifacts/realism/blender.log
+          if grep -E 'Traceback|Error: Python' artifacts/realism/blender.log; then exit 1; fi
+      - name: Check contracts and actual Mobile plus Compatibility renders
+        shell: bash
+        run: bash art/realism/validate.sh "$PWD/artifacts/realism"
+      - name: Generate actual Godot turntable and reviewed previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp artifacts/realism/hero-mobile.png art/realism/previews/hero-mobile.png
+          cp artifacts/realism/hero-gl_compatibility.png art/realism/previews/hero-compatibility.png
+          cp artifacts/realism/weapon-mobile.png art/realism/previews/weapon-mobile.png
+          cp artifacts/realism/gameplay-mobile.png art/realism/previews/gameplay-mobile.png
+          timeout 300 xvfb-run -a godot --path godot --rendering-method mobile --audio-driver Dummy --fixed-fps 24 --write-movie /tmp/hero-turntable.avi --script res://tests/realism/visual.gd -- --turntable 2>&1 | tee artifacts/realism/turntable.log
+          grep -q SENJIN_REALISM_TURNTABLE_PASS artifacts/realism/turntable.log
+          ffmpeg -y -loglevel error -i /tmp/hero-turntable.avi -an -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart art/realism/previews/hero-turntable.mp4
+      - name: Commit generated art only to unchanged realism branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/art/realistic-pbr-pass
+          git fetch origin art/realistic-pbr-pass
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo 'Branch moved; refusing to overwrite'; exit 1; }
+          git add -- art/realism/source/*.blend art/realism/previews/*.png art/realism/previews/*.mp4 godot/assets/realism/*.glb godot/assets/realism/*.glb.import godot/assets/realism/manifest.json godot/assets/realism/textures/*.png godot/assets/realism/textures/*.png.import godot/assets/realism/textures/*.exr godot/assets/realism/textures/*.exr.import godot/assets/realism/textures/manifest.json
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Bake and validate Iron Oath PBR hero, detailed polearm and sky'
+            git push origin HEAD:refs/heads/art/realistic-pbr-pass
+          fi
+          git rev-parse HEAD | tee artifacts/realism/generated-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-realism-authoring-${{ github.sha }}
+          path: |
+            artifacts/realism/
+            art/realism/source/
+            art/realism/previews/
+            godot/assets/realism/*.glb
+            godot/assets/realism/textures/
+            godot/assets/realism/manifest.json
+          retention-days: 14

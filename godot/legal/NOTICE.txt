@@ -66,3 +66,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Iron Oath PBR hero/weapon milestone: original scripted geometry, texture fields,
+weapon bakes and sky panorama are covered by assets/realism/LICENSE.txt.
+The native hero retains the earlier rig/animation implementation and notices.
+Blender is an authoring tool; it is not shipped with this game.
