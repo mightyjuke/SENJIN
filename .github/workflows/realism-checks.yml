@@ -1,0 +1,39 @@
+name: PBR realism contracts and renders
+on:
+  pull_request:
+    paths: ['art/**', 'godot/**', '.github/workflows/realism-checks.yml']
+  push:
+    branches: [main]
+    paths: ['art/realism/**', 'godot/**', '.github/workflows/realism-checks.yml']
+permissions:
+  contents: read
+concurrency:
+  group: realism-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  realism:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-vulkan-drivers
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/godot.zip
+          echo 'cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  /tmp/godot.zip' | sha256sum -c -
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Check imported PBR assets, gameplay and both renderers
+        shell: bash
+        run: bash art/realism/validate.sh "$PWD/artifacts/realism"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senjin-realism-checks-${{ github.sha }}
+          path: artifacts/realism/
+          retention-days: 14

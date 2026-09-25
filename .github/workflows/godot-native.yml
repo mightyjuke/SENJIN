@@ -33,7 +33,7 @@ jobs:
           sudo install "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           godot --version
           sudo apt-get update -qq
-          sudo apt-get install -y xvfb libgl1-mesa-dri
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-vulkan-drivers
           mkdir -p artifacts
       - name: Import and parse native project
         shell: bash
